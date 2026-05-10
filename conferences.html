@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BD Conference Deadlines 2026–2027</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #141720;
+    --surface2: #1c2030;
+    --border: #252a3a;
+    --accent: #4f8dff;
+    --accent2: #7c5cfc;
+    --green: #2ecc8a;
+    --amber: #f5a623;
+    --red: #ff5f5f;
+    --text: #e8eaf0;
+    --muted: #7a819a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  header {
+    padding: 3.5rem 3rem 2.5rem;
+    border-bottom: 1px solid var(--border);
+    position: relative; overflow: hidden;
+  }
+  header::before {
+    content: ''; position: absolute; top: -80px; left: -80px;
+    width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(79,141,255,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header::after {
+    content: ''; position: absolute; bottom: -100px; right: -60px;
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(124,92,252,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+  .header-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .18em; color: var(--accent); text-transform: uppercase; margin-bottom: .6rem; }
+  h1 { font-size: clamp(1.8rem,4vw,2.8rem); font-weight: 600; line-height: 1.1; letter-spacing: -.02em; }
+  h1 span { color: var(--accent); }
+  .header-sub { font-size: .88rem; color: var(--muted); margin-top: .7rem; max-width: 480px; line-height: 1.6; }
+  .today-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: .7rem 1.2rem; font-family: 'Space Mono', monospace; font-size: .72rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; line-height: 1.4; }
+  .today-badge strong { color: var(--text); display: block; font-size: .95rem; margin-top: 3px; }
+
+  .filters { display: flex; gap: .5rem; margin-top: 2rem; flex-wrap: wrap; }
+  .filter-btn { font-family: 'Space Mono', monospace; font-size: .68rem; letter-spacing: .06em; padding: .4rem .95rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all .2s; text-transform: uppercase; }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  main { padding: 2.5rem 3rem; }
+
+  .section-label { font-family: 'Space Mono', monospace; font-size: .67rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-bottom: 1.1rem; display: flex; align-items: center; gap: .6rem; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem; margin-bottom: 2.8rem; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.3rem 1.5rem; position: relative; overflow: hidden; transition: transform .2s, box-shadow .2s, border-color .2s; animation: fadeUp .4s ease both; }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 14px 36px rgba(0,0,0,.45); border-color: #353c55; }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); opacity: 0; transition: opacity .2s; }
+  .card:hover::before { opacity: 1; }
+
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; margin-bottom: 1rem; }
+  .conf-name { font-size: 1.05rem; font-weight: 600; letter-spacing: -.01em; }
+  .conf-name a { color: var(--text); text-decoration: none; border-bottom: 1px solid rgba(79,141,255,0.3); transition: border-color .2s, color .2s; }
+  .conf-name a:hover { color: var(--accent); border-color: var(--accent); }
+  .conf-full { font-size: .75rem; color: var(--muted); margin-top: .25rem; line-height: 1.5; }
+
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+  .dot-open   { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .dot-urgent { background: var(--amber); box-shadow: 0 0 8px var(--amber); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+  .dates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem .7rem; margin-bottom: .9rem; }
+  .date-label { font-size: .62rem; font-family: 'Space Mono', monospace; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; margin-bottom: .15rem; }
+  .date-value { font-size: .84rem; font-weight: 500; color: var(--text); }
+  .date-value.highlight { color: var(--accent); }
+  .date-value.urgent    { color: var(--amber); font-weight: 600; }
+
+  .countdown { background: var(--surface2); border-radius: 8px; padding: .55rem .9rem; margin-top: .7rem; display: flex; align-items: center; justify-content: space-between; }
+  .countdown-label { font-size: .68rem; font-family: 'Space Mono', monospace; color: var(--muted); letter-spacing: .05em; }
+  .countdown-days { font-family: 'Space Mono', monospace; font-size: .84rem; font-weight: 700; }
+  .days-open   { color: var(--green); }
+  .days-urgent { color: var(--amber); }
+
+  .conf-date-bar { margin-top: .85rem; padding-top: .85rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+  .conf-date-badge { font-size: .7rem; font-family: 'Space Mono', monospace; color: var(--accent2); background: rgba(124,92,252,0.1); border-radius: 5px; padding: .25rem .65rem; white-space: nowrap; }
+  .venue { font-size: .7rem; color: var(--muted); }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  .card:nth-child(1){animation-delay:.04s} .card:nth-child(2){animation-delay:.09s}
+  .card:nth-child(3){animation-delay:.14s} .card:nth-child(4){animation-delay:.19s}
+  .card:nth-child(5){animation-delay:.24s} .card:nth-child(6){animation-delay:.29s}
+  .card:nth-child(7){animation-delay:.34s} .card:nth-child(8){animation-delay:.39s}
+  .card:nth-child(9){animation-delay:.44s}
+
+  footer { border-top: 1px solid var(--border); padding: 1.4rem 3rem; font-size: .73rem; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+
+  @media (max-width: 640px) {
+    header,main,footer { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .cards { grid-template-columns: 1fr; }
+    .dates-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div>
+      <p class="header-label">Research · Bangladesh · 2026–2027</p>
+      <h1>Conference <span>Deadlines</span></h1>
+      <p class="header-sub">Upcoming conferences sorted by paper submission deadline. Click any conference name to visit the official website.</p>
+      <div class="filters">
+        <button class="filter-btn active" onclick="filterCards('all',this)">All</button>
+        <button class="filter-btn" onclick="filterCards('urgent',this)">Urgent (&lt;30 days)</button>
+        <button class="filter-btn" onclick="filterCards('open',this)">Open</button>
+      </div>
+    </div>
+    <div class="today-badge">Today<strong id="today-date">—</strong></div>
+  </div>
+</header>
+
+<main>
+  <p class="section-label">Open for submission · sorted by deadline</p>
+  <div class="cards">
+
+    <!-- 1. ICCA 2026 — May 15 -->
+    <div class="card" data-deadline="2026-05-15">
+      <div class="card-top">
+        <div>
+          <div class="conf-name"><a href="https://icca.aiub.edu/" target="_blank">ICCA 2026</a></div>
+          <div class="conf-full">International Conference on Computing Advancements</div>
+        </div>
+        <div class="status-dot dot-urgent"></div>
+      </div>
+      <div class="dates-grid">
+        <div><div class="date-label">Paper Submission</div><div class="date-value urgent">May 15, 2026</div></div>
+        <div><div class="date-label">Notification</div><div class="date-value">Aug 5, 2026</div></div>
+        <div><div class="date-label">Camera Ready</div><div class="date-value">Aug 20, 2026</div></div>
+        <div><div class="date-label">Registration</div><div class="date-value">Sep 5, 2026</div></div>
+      </div>
+      <div class="countdown"><span class="countdown-label">Submission closes in</span><span class="countdown-days" id="cd-icca">—</span></div>
+      <div class="conf-date-bar"><span class="conf-date-badge">📅 Oct 15–16, 2026</span><span class="venue">AIUB, Dhaka</span></div>
+    </div>
+
+    <!-- 2. ICISET 2026 — Jun 6 -->
+    <div class="card" data-deadline="2026-06-06">
+      <div class="card-top">
+        <div>
+          <div class="conf-name"><a href="https://iciset.iiuc.ac.bd/" target="_blank">ICISET 2026</a></div>
+          <div class="conf-full">Int'l Conf on Innovations in Science, Engineering and Technology</div>
+        </div>
+        <div class="status-dot dot-open"></div>
+      </div>
+      <div class="dates-grid">
+        <div><div class="date-label">Paper Submission</div><div class="date-value highlight">Jun 6, 2026</div></div>
+        <div><div class="date-label">Notification</div><div class="date-value">Jul 15, 2026</div></div>
+        <div><div class="date-label">Camera Ready</div><div class="date-value">Aug 5, 2026</div></div>
+        <div><div class="date-label">Registration</div><div class="date-value">Sep 26, 2026</div></div>
+      </div>
+      <div class="countdown"><span class="countdown-label">Submission closes in</span><span class="countdown-days" id="cd-iciset">—</span></div>
+      <div class="conf-date-bar"><span class="conf-date-badge">📅 Nov 7–9, 2026</span><span class="venue">IIUC, Chittagong</span></div>
+    </div>
+
+    <!-- 3. iCACCESS 2026 — Jun 15 -->
+    <div class="card" data-deadline="2026-06-15">
+      <div class="card-top">
+        <div>
+          <div class="conf-name"><a href="https://icaccess.ulab.edu.bd/" target="_blank">iCACCESS 2026</a></div>
+          <div class="conf-full">Int'l Conf on Advances in Computing, Communication, Electrical &amp; Smart Systems</div>
+        </div>
+        <div class="status-dot dot-open"></div>
+      </div>
+      <div class="dates-grid">
+        <div><div class="date-label">Paper Submission</div><div class="date-value highlight">Jun 15, 2026</div></div>
+        <div><div class="date-label">Notification</div><div class="date-value">Aug 2, 2026</div></div>
+        <div><div class="date-label">Camera Ready</div><div class="date-value">Aug 15, 2026</div></div>
+        <div><div class="date-label">Registration</div><div class="date-value">Sep 2, 2026</div></div>
+      </div>
+      <div class="countdown"><span class="countdown-label">Submission closes in</span><span class="countdown-days" id="cd-icaccess">—</span></div>
+      <div class="conf-date-bar"><span class="conf-date-badge">📅 Oct 2–3, 2026</span><span class="venue">ULAB, Dhaka</span></div>
+    </div>
+
+    <!-- 4. BECITHCON 2026 — Jun 15 -->
+    <div class="card" data-deadline="2026-06-15">
+      <div class="card-top">
+        <div>
+          <div class="conf-name"><a href="https://becithcon.org/2026/" target="_blank">BECITHCON 2026</a></div>
+          <div class="conf-full">IEEE Int'l Conf on Biomedical Engineering, Computer &amp; IT for Health</div>
+        </div>
+        <div class="status-dot dot-open"></div>
+      </div>
+      <div class="dates-grid">
+        <div><div class="date-label">Paper Submission</div><div class="date-value highlight">Jun 15, 2026</div></div>
+        <div><div class="date-label">Notification</div><div class="date-value">Jul 15, 2026</div></div>
+        <div><div class="date-label">Camera Ready</div><div class="date-value">Aug 10, 2026</div></div>
+        <div><div class="date-label">Registration</div><div class="date-value">Aug 10, 2026</div></div>
+      </div>
+      <div class="countdown"><span class="countdown-label">Submission closes in</span><span class="countdown-days" id="cd-becithcon">—</span></div>
+      <div class="conf-date-bar"><span class="conf-date-badge">📅 Sep 4–5, 2026</span><span class="venue">IUBAT, Dhaka</span></div>
+    </div>
+
+    <!-- 5. RAAICON 2026 — Jul 8 -->
+    <div class="card" data-deadline="2026-07-08">
+      <div class="card-top">
+        <div>
+          <div class="conf-name"><a href="https://raaicon.org/" target="_blank">RAAICON 2026</a></div>
+          <div class="conf-full">IEEE Int'l Conf on Robotics, Automation, AI and IoT</div>
+        </div>
+        <div class="status-dot dot-open"></div>
+      </div>
+      <div class="dates-grid">
+        <div><div class="date-label">Paper Submission</div><div class="date-value highlight">Jul 8, 2026</div></div>
+        <div><div class="date-label">Notification</div><div class="date-value">Aug 18, 2026</div></div>
+        <div><div class="date-label">Camera Ready</div><div class="date-value">Aug 30, 2026</div></div>
+        <div><div class="date-label">Registration</div><div class="date-value">Aug 30, 2026</div></div>
+      </div>
+      <div class="countdown"><span class="countdown-label">Submission closes in</span><span class="countdown-days" id="cd-raaicon">—</span></div>
+      <div class="conf-date-bar"><span class="conf-date-badge">📅 Sep 18–19, 2026</span><span class="venue">JUST, Jashore</span></div>
+    </div>
+
+    <!-- 6. ICERIE 2027 — abstract Jul 15 -->
+    <div class="card" data-deadline="2026-07-15">
+      <div class="card-top">
+        <div>
+          <div class="conf-name"><a href="https://icerie2027.sust.edu/" target="_blank">ICERIE 2027</a></div>
+          <div class="conf-full">9th Int'l Conf on Engineering Research, Innovation and Education</div>
+        </div>
+        <div class="status-dot dot-open"></div>
+      </div>
+      <div class="dates-grid">
+        <div><div class="date-label">Abstract Submission</div><div class="date-value highlight">Jul 15, 2026</div></div>
+        <div><div class="date-label">Abstract Notification</div><div class="date-value">Aug 31, 2026</div></div>
+        <div><div class="date-label">Full Paper Submission</div><div class="date-value">Sep 30, 2026</div></div>
+        <div><div class="date-label">Full Paper Notification</div><div class="date-value">Oct 31, 2026</div></div>
+        <div><div class="date-label">Camera Ready</div><div class="date-value">Nov 30, 2026</div></div>
+        <div><div class="date-label">Registration</div><div class="date-value">Nov 30, 2026</div></div>
+      </div>
+      <div class="countdown"><span class="countdown-label">Abstract deadline in</span><span class="countdown-days" id="cd-icerie">—</span></div>
+      <div class="conf-date-bar"><span class="conf-date-badge">📅 Jan 21–23, 2027</span><span class="venue">SUST, Sylhet</span></div>
+    </div>
+
+    <!-- 7. ICRPSET 2026 — Jul 20 -->
+    <div class="card" data-deadline="2026-07-20">
+      <div class="card-top">
+        <div>
+          <div class="conf-name"><a href="https://csa.ru.ac.bd/icrpset/2026/" target="_blank">ICRPSET 2026</a></div>
+          <div class="conf-full">Int'l Conf on Recent Progresses in Science, Engineering &amp; Technology</div>
+        </div>
+        <div class="status-dot dot-open"></div>
+      </div>
+      <div class="dates-grid">
+        <div><div class="date-label">Paper Submission</div><div class="date-value highlight">Jul 20, 2026</div></div>
+        <div><div class="date-label">Notification</div><div class="date-value">Sep 20, 2026</div></div>
+        <div><div class="date-label">Camera Ready</div><div class="date-value">Oct 5, 2026</div></div>
+        <div><div class="date-label">Registration</div><div class="date-value">Oct 5, 2026</div></div>
+      </div>
+      <div class="countdown"><span class="countdown-label">Submission closes in</span><span class="countdown-days" id="cd-icrpset">—</span></div>
+      <div class="conf-date-bar"><span class="conf-date-badge">📅 Dec 5–6, 2026</span><span class="venue">University of Rajshahi</span></div>
+    </div>
+
+    <!-- 8. ICECE 2026 — Aug 1 -->
+    <div class="card" data-deadline="2026-08-01">
+      <div class="card-top">
+        <div>
+          <div class="conf-name"><a href="https://icece.org.bd/2026/" target="_blank">ICECE 2026</a></div>
+          <div class="conf-full">14th Int'l Conference on Electrical &amp; Computer Engineering</div>
+        </div>
+        <div class="status-dot dot-open"></div>
+      </div>
+      <div class="dates-grid">
+        <div><div class="date-label">Paper Submission</div><div class="date-value highlight">Aug 1, 2026</div></div>
+        <div><div class="date-label">Notification</div><div class="date-value">Nov 1, 2026</div></div>
+        <div><div class="date-label">Camera Ready</div><div class="date-value">Nov 10, 2026</div></div>
+        <div><div class="date-label">Registration</div><div class="date-value">Nov 10, 2026</div></div>
+      </div>
+      <div class="countdown"><span class="countdown-label">Submission closes in</span><span class="countdown-days" id="cd-icece">—</span></div>
+      <div class="conf-date-bar"><span class="conf-date-badge">📅 Dec 10–12, 2026</span><span class="venue">BUET, Dhaka</span></div>
+    </div>
+
+    <!-- 9. AICBM 2026 — Aug 20 -->
+    <div class="card" data-deadline="2026-08-20">
+      <div class="card-top">
+        <div>
+          <div class="conf-name"><a href="https://aicbm.aiub.edu/" target="_blank">AICBM 2026</a></div>
+          <div class="conf-full">AIUB International Conference on Business and Management</div>
+        </div>
+        <div class="status-dot dot-open"></div>
+      </div>
+      <div class="dates-grid">
+        <div><div class="date-label">Paper Submission</div><div class="date-value highlight">Aug 20, 2026</div></div>
+        <div><div class="date-label">Notification</div><div class="date-value">Oct 10, 2026</div></div>
+        <div><div class="date-label">Camera Ready</div><div class="date-value">Oct 30, 2026</div></div>
+        <div><div class="date-label">Registration</div><div class="date-value">Nov 10, 2026</div></div>
+      </div>
+      <div class="countdown"><span class="countdown-label">Submission closes in</span><span class="countdown-days" id="cd-aicbm">—</span></div>
+      <div class="conf-date-bar"><span class="conf-date-badge">📅 Dec 12–13, 2026</span><span class="venue">AIUB, Dhaka</span></div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <span>Last updated: May 10, 2026 · Data sourced from official conference websites</span>
+  <span>⚡ Always verify dates on official sites before submitting</span>
+</footer>
+
+<script>
+  document.getElementById('today-date').textContent =
+    new Date().toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+
+  function daysUntil(s) {
+    const t = new Date(s + 'T23:59:59'), n = new Date();
+    n.setHours(0,0,0,0);
+    return Math.ceil((t - n) / 86400000);
+  }
+
+  const entries = [
+    ['cd-icca','2026-05-15'],['cd-iciset','2026-06-06'],
+    ['cd-icaccess','2026-06-15'],['cd-becithcon','2026-06-15'],
+    ['cd-raaicon','2026-07-08'],['cd-icerie','2026-07-15'],
+    ['cd-icrpset','2026-07-20'],['cd-icece','2026-08-01'],
+    ['cd-aicbm','2026-08-20']
+  ];
+
+  entries.forEach(([id, date]) => {
+    const el = document.getElementById(id); if (!el) return;
+    const d = daysUntil(date);
+    if (d < 0) { el.textContent = 'Closed'; el.style.color = 'var(--red)'; }
+    else if (d <= 10) { el.textContent = d + (d===1?' day':' days'); el.className = 'countdown-days days-urgent'; }
+    else { el.textContent = d + ' days'; el.className = 'countdown-days days-open'; }
+  });
+
+  document.querySelectorAll('.card').forEach(card => {
+    const d = daysUntil(card.dataset.deadline || '2099-01-01');
+    const dot = card.querySelector('.status-dot');
+    if (dot && d <= 10 && d >= 0) dot.className = 'status-dot dot-urgent';
+  });
+
+  function filterCards(type, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.card').forEach(card => {
+      const d = daysUntil(card.dataset.deadline || '2099-01-01');
+      if      (type==='all')    card.style.display = '';
+      else if (type==='urgent') card.style.display = (d>=0 && d<=30) ? '' : 'none';
+      else if (type==='open')   card.style.display = (d>0) ? '' : 'none';
+    });
+  }
+</script>
+</body>
+</html>
