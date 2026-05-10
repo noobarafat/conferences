@@ -44,8 +44,9 @@
   h1 { font-size: clamp(1.8rem,4vw,2.8rem); font-weight: 600; line-height: 1.1; letter-spacing: -.02em; }
   h1 span { color: var(--accent); }
   .header-sub { font-size: .88rem; color: var(--muted); margin-top: .7rem; max-width: 480px; line-height: 1.6; }
-  .today-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: .7rem 1.2rem; font-family: 'Space Mono', monospace; font-size: .72rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; line-height: 1.4; }
+  .today-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: .7rem 1.2rem; font-family: 'Space Mono', monospace; font-size: .72rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; line-height: 1.4; min-width: 174px; }
   .today-badge strong { color: var(--text); display: block; font-size: .95rem; margin-top: 3px; }
+  .today-time { color: var(--accent); display: block; font-size: .76rem; margin-top: 2px; }
 
   .filters { display: flex; gap: .5rem; margin-top: 2rem; flex-wrap: wrap; }
   .filter-btn { font-family: 'Space Mono', monospace; font-size: .68rem; letter-spacing: .06em; padding: .4rem .95rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all .2s; text-transform: uppercase; }
@@ -73,6 +74,7 @@
   .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
   .dot-open   { background: var(--green); box-shadow: 0 0 8px var(--green); }
   .dot-urgent { background: var(--amber); box-shadow: 0 0 8px var(--amber); animation: pulse 1.5s infinite; }
+  .dot-closed { background: var(--red); opacity: .8; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
 
   .dates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem .7rem; margin-bottom: .9rem; }
@@ -86,6 +88,9 @@
   .countdown-days { font-family: 'Space Mono', monospace; font-size: .84rem; font-weight: 700; }
   .days-open   { color: var(--green); }
   .days-urgent { color: var(--amber); }
+  .days-closed { color: var(--red); }
+
+  .card.is-closed { opacity: .64; }
 
   .conf-date-bar { margin-top: .85rem; padding-top: .85rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
   .conf-date-badge { font-size: .7rem; font-family: 'Space Mono', monospace; color: var(--accent2); background: rgba(124,92,252,0.1); border-radius: 5px; padding: .25rem .65rem; white-space: nowrap; }
@@ -117,11 +122,11 @@
       <p class="header-sub">Upcoming conferences sorted by paper submission deadline. Click any conference name to visit the official website.</p>
       <div class="filters">
         <button class="filter-btn active" onclick="filterCards('all',this)">All</button>
-        <button class="filter-btn" onclick="filterCards('urgent',this)">Urgent (&lt;30 days)</button>
+        <button class="filter-btn" onclick="filterCards('urgent',this)">Urgent (&le;30 days)</button>
         <button class="filter-btn" onclick="filterCards('open',this)">Open</button>
       </div>
     </div>
-    <div class="today-badge">Today<strong id="today-date">—</strong></div>
+    <div class="today-badge" aria-live="polite">Today<strong id="today-date">—</strong><span class="today-time" id="current-time">—</span></div>
   </div>
 </header>
 
@@ -306,52 +311,152 @@
 </main>
 
 <footer>
-  <span>Last updated: May 10, 2026 · Data sourced from official conference websites</span>
-  <span>⚡ Always verify dates on official sites before submitting</span>
+  <span>Data updated: May 10, 2026 · Live refresh: <strong id="last-refresh">—</strong></span>
+  <span>Auto-refresh uses Bangladesh time · Always verify dates on official sites before submitting</span>
 </footer>
 
 <script>
-  document.getElementById('today-date').textContent =
-    new Date().toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+  const BD_TIMEZONE = 'Asia/Dhaka';
+  const DAY_MS = 86400000;
+  const URGENT_DAYS = 30;
+  let activeFilter = 'all';
 
-  function daysUntil(s) {
-    const t = new Date(s + 'T23:59:59'), n = new Date();
-    n.setHours(0,0,0,0);
-    return Math.ceil((t - n) / 86400000);
+  const dateFormatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: BD_TIMEZONE,
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+  const timeFormatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: BD_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  });
+  const datePartsFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: BD_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+
+  function bdDateParts(now = new Date()) {
+    const parts = {};
+    datePartsFormatter.formatToParts(now).forEach(part => {
+      if (part.type !== 'literal') parts[part.type] = Number(part.value);
+    });
+    return parts;
   }
 
-  const entries = [
-    ['cd-icca','2026-05-15'],['cd-iciset','2026-06-06'],
-    ['cd-icaccess','2026-06-15'],['cd-becithcon','2026-06-15'],
-    ['cd-raaicon','2026-07-08'],['cd-icerie','2026-07-15'],
-    ['cd-icrpset','2026-07-20'],['cd-icece','2026-08-01'],
-    ['cd-aicbm','2026-08-20']
-  ];
+  function daySerial(year, month, day) {
+    return Date.UTC(year, month - 1, day) / DAY_MS;
+  }
 
-  entries.forEach(([id, date]) => {
-    const el = document.getElementById(id); if (!el) return;
-    const d = daysUntil(date);
-    if (d < 0) { el.textContent = 'Closed'; el.style.color = 'var(--red)'; }
-    else if (d <= 10) { el.textContent = d + (d===1?' day':' days'); el.className = 'countdown-days days-urgent'; }
-    else { el.textContent = d + ' days'; el.className = 'countdown-days days-open'; }
-  });
+  function deadlineSerial(dateString) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return daySerial(year, month, day);
+  }
 
-  document.querySelectorAll('.card').forEach(card => {
-    const d = daysUntil(card.dataset.deadline || '2099-01-01');
-    const dot = card.querySelector('.status-dot');
-    if (dot && d <= 10 && d >= 0) dot.className = 'status-dot dot-urgent';
-  });
+  function daysUntil(dateString, now = new Date()) {
+    const today = bdDateParts(now);
+    return deadlineSerial(dateString) - daySerial(today.year, today.month, today.day);
+  }
 
-  function filterCards(type, btn) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+  function countdownText(days) {
+    if (days < 0) return 'Closed';
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Tomorrow';
+    return days + ' days';
+  }
+
+  function statusClass(days) {
+    if (days < 0) return 'closed';
+    if (days <= URGENT_DAYS) return 'urgent';
+    return 'open';
+  }
+
+  function updateClock(now) {
+    document.getElementById('today-date').textContent = dateFormatter.format(now);
+    document.getElementById('current-time').textContent = timeFormatter.format(now) + ' BD time';
+    document.getElementById('last-refresh').textContent = timeFormatter.format(now);
+  }
+
+  function updateCards(now) {
     document.querySelectorAll('.card').forEach(card => {
-      const d = daysUntil(card.dataset.deadline || '2099-01-01');
-      if      (type==='all')    card.style.display = '';
-      else if (type==='urgent') card.style.display = (d>=0 && d<=30) ? '' : 'none';
-      else if (type==='open')   card.style.display = (d>0) ? '' : 'none';
+      const deadline = card.dataset.deadline || '2099-01-01';
+      const days = daysUntil(deadline, now);
+      const status = statusClass(days);
+      const countdown = card.querySelector('.countdown-days');
+      const dot = card.querySelector('.status-dot');
+      const deadlineValue = card.querySelector('.dates-grid > div:first-child .date-value');
+
+      card.classList.toggle('is-closed', status === 'closed');
+      card.dataset.status = status;
+
+      if (countdown) {
+        countdown.textContent = countdownText(days);
+        countdown.className = 'countdown-days days-' + status;
+      }
+
+      if (dot) {
+        dot.className = 'status-dot dot-' + status;
+      }
+
+      if (deadlineValue) {
+        deadlineValue.classList.toggle('urgent', status === 'urgent');
+        deadlineValue.classList.toggle('highlight', status === 'open');
+      }
     });
   }
+
+  function sortCards(now) {
+    const list = document.querySelector('.cards');
+    const cards = Array.from(list.querySelectorAll('.card'));
+    const sortedCards = cards.sort((a, b) => {
+      const aDays = daysUntil(a.dataset.deadline || '2099-01-01', now);
+      const bDays = daysUntil(b.dataset.deadline || '2099-01-01', now);
+      const aClosed = aDays < 0;
+      const bClosed = bDays < 0;
+
+      if (aClosed !== bClosed) return aClosed ? 1 : -1;
+      return deadlineSerial(a.dataset.deadline || '2099-01-01') - deadlineSerial(b.dataset.deadline || '2099-01-01');
+    });
+    sortedCards.forEach((card, index) => {
+      if (list.children[index] !== card) {
+        list.insertBefore(card, list.children[index] || null);
+      }
+    });
+  }
+
+  function applyFilter() {
+    document.querySelectorAll('.card').forEach(card => {
+      const isUrgent = card.dataset.status === 'urgent';
+      const isOpen = card.dataset.status === 'open' || card.dataset.status === 'urgent';
+
+      if (activeFilter === 'all') card.style.display = '';
+      else if (activeFilter === 'urgent') card.style.display = isUrgent ? '' : 'none';
+      else if (activeFilter === 'open') card.style.display = isOpen ? '' : 'none';
+    });
+  }
+
+  function refreshLiveData() {
+    const now = new Date();
+    updateClock(now);
+    updateCards(now);
+    sortCards(now);
+    applyFilter();
+  }
+
+  function filterCards(type, btn) {
+    activeFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilter();
+  }
+
+  refreshLiveData();
+  setInterval(refreshLiveData, 1000);
 </script>
 </body>
 </html>
