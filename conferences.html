@@ -52,6 +52,10 @@
   .filter-btn { font-family: 'Space Mono', monospace; font-size: .68rem; letter-spacing: .06em; padding: .4rem .95rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all .2s; text-transform: uppercase; }
   .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
   .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .filter-ended:hover { border-color: var(--red); color: var(--red); }
+  .filter-ended.active { background: var(--red); border-color: var(--red); color: #fff; }
+  .filter-ended #ended-count { display: inline-block; min-width: 16px; padding: 0 4px; margin-left: 2px; border-radius: 8px; background: rgba(255,95,95,.18); color: var(--red); font-size: .62rem; line-height: 15px; text-align: center; }
+  .filter-ended.active #ended-count { background: rgba(255,255,255,.25); color: #fff; }
 
   main { padding: 2.5rem 3rem; }
 
@@ -144,6 +148,7 @@
         <button class="filter-btn active" onclick="filterCards('all',this)">All</button>
         <button class="filter-btn" onclick="filterCards('urgent',this)">Urgent (&le;30 days)</button>
         <button class="filter-btn" onclick="filterCards('open',this)">Open</button>
+        <button class="filter-btn filter-ended" onclick="filterCards('ended',this)">Ended <span id="ended-count">0</span></button>
       </div>
     </div>
     <div class="today-badge" aria-live="polite">Today<strong id="today-date">—</strong><span class="today-time" id="current-time">—</span></div>
@@ -558,13 +563,33 @@
 
   function applyFilter() {
     document.querySelectorAll('.card').forEach(card => {
+      const isClosed = card.dataset.status === 'closed';
       const isUrgent = card.dataset.status === 'urgent';
       const isOpen = card.dataset.status === 'open' || card.dataset.status === 'urgent';
 
-      if (activeFilter === 'all') card.style.display = '';
-      else if (activeFilter === 'urgent') card.style.display = isUrgent ? '' : 'none';
-      else if (activeFilter === 'open') card.style.display = isOpen ? '' : 'none';
+      let show;
+      if (activeFilter === 'ended') show = isClosed;
+      else if (activeFilter === 'urgent') show = isUrgent;
+      else if (activeFilter === 'open') show = isOpen;
+      else show = !isClosed; // 'all' = every non-closed
+
+      card.style.display = show ? '' : 'none';
     });
+    updateSectionLabel();
+  }
+
+  function updateSectionLabel() {
+    const label = document.querySelector('.section-label');
+    if (!label) return;
+    label.textContent = activeFilter === 'ended'
+      ? 'Ended · deadline passed'
+      : 'Open for submission · sorted by deadline';
+  }
+
+  function updateEndedCount() {
+    const count = document.querySelectorAll('.card[data-status="closed"]').length;
+    const el = document.getElementById('ended-count');
+    if (el) el.textContent = count;
   }
 
   function refreshLiveData() {
@@ -572,6 +597,7 @@
     updateClock(now);
     updateCards(now);
     sortCards(now);
+    updateEndedCount();
     applyFilter();
   }
 
