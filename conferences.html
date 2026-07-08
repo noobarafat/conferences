@@ -93,6 +93,25 @@
 
   .card.is-closed { opacity: .64; }
 
+  /* deadline urgency tiers */
+  /* <=3 days: full red card */
+  .card.tier-critical { border-color: var(--red); background: linear-gradient(180deg, rgba(255,60,60,.16), rgba(255,60,60,.05)); box-shadow: 0 0 24px rgba(255,60,60,.45); }
+  .card.tier-critical::before { opacity: 1; background: var(--red); }
+  .card.tier-critical .conf-name a { color: #ff6b6b; border-color: rgba(255,60,60,.4); }
+  .card.tier-critical .venue, .card.tier-critical .conf-full { color: #ffb3b3; }
+
+  /* <=7 days: continuous red shadow spark */
+  .card.tier-high { border-color: rgba(255,60,60,.55); animation: fadeUp .4s ease both, sparkRed 1.4s ease-in-out infinite; }
+  @keyframes sparkRed {
+    0%,100% { box-shadow: 0 0 6px rgba(255,60,60,.25); }
+    50%     { box-shadow: 0 0 28px 4px rgba(255,60,60,.7); }
+  }
+
+  /* <=10 days: orange top bar + animated dashed ring */
+  .card.tier-warn { border-color: rgba(255,140,40,.5); }
+  .card.tier-warn::before { opacity: 1; background: linear-gradient(90deg, #ff8c28, #ffb347); }
+  .card.tier-warn .conf-date-badge { color: #ffb347; background: rgba(255,140,40,.12); }
+
   .conf-date-bar { margin-top: .85rem; padding-top: .85rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
   .conf-date-badge { font-size: .7rem; font-family: 'Space Mono', monospace; color: var(--accent2); background: rgba(124,92,252,0.1); border-radius: 5px; padding: .25rem .65rem; white-space: nowrap; }
   .venue { font-size: .7rem; color: var(--muted); }
@@ -472,6 +491,14 @@
     return 'open';
   }
 
+  function tierClass(days) {
+    if (days < 0) return '';
+    if (days <= 3) return 'tier-critical';
+    if (days <= 7) return 'tier-high';
+    if (days <= 10) return 'tier-warn';
+    return '';
+  }
+
   function updateClock(now) {
     document.getElementById('today-date').textContent = dateFormatter.format(now);
     document.getElementById('current-time').textContent = timeFormatter.format(now) + ' BD time';
@@ -489,6 +516,10 @@
 
       card.classList.toggle('is-closed', status === 'closed');
       card.dataset.status = status;
+
+      card.classList.remove('tier-critical', 'tier-high', 'tier-warn');
+      const tier = tierClass(days);
+      if (tier) card.classList.add(tier);
 
       if (countdown) {
         countdown.textContent = countdownText(days);
