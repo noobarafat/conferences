@@ -278,15 +278,39 @@
 </header>
 
 <nav class="tab-nav" id="tab-nav">
-  <button class="tab-btn active" data-tab="conferences" onclick="switchTab('conferences',this)"><span class="tab-ico">🎓</span>Conferences</button>
-  <button class="tab-btn" data-tab="ielts" onclick="switchTab('ielts',this)"><span class="tab-ico">📝</span>IELTS Tracker</button>
+  <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview',this)"><span class="tab-ico">📊</span>Overview</button>
+  <button class="tab-btn" data-tab="ielts" onclick="switchTab('ielts',this)"><span class="tab-ico">📝</span>IELTS</button>
   <button class="tab-btn" data-tab="uni" onclick="switchTab('uni',this)"><span class="tab-ico">🏛️</span>Universities</button>
   <button class="tab-btn" data-tab="docs" onclick="switchTab('docs',this)"><span class="tab-ico">📁</span>Documents</button>
   <button class="tab-btn" data-tab="research" onclick="switchTab('research',this)"><span class="tab-ico">🔬</span>Research</button>
 </nav>
 
-<!-- ============ TAB: CONFERENCES ============ -->
-<section class="tab-panel active" id="panel-conferences">
+<!-- ============ TAB: OVERVIEW ============ -->
+<section class="tab-panel active" id="panel-overview">
+  <div class="panel-head">
+    <div>
+      <h2>Your <span>Snapshot</span></h2>
+      <p>Everything at a glance — IELTS, papers, applications and documents.</p>
+    </div>
+  </div>
+  <div class="stat-row" id="ov-stats"></div>
+  <div class="stat-row" id="ov-deadlines"></div>
+  <div style="height:2.5rem"></div>
+</section>
+
+<!-- ============ TAB: RESEARCH (papers + conferences) ============ -->
+<section class="tab-panel" id="panel-research">
+  <div class="panel-head">
+    <div>
+      <h2>Research <span>Papers</span></h2>
+      <p>Manuscripts from first draft to acceptance, plus live conference deadlines.</p>
+    </div>
+    <button class="btn" onclick="openPaperForm()">+ Add Paper</button>
+  </div>
+  <div class="stat-row" id="research-stats"></div>
+  <div class="entry-list" id="research-list"></div>
+
+  <p class="section-label" style="margin:2.4rem 3rem 0">Conference deadlines · Bangladesh</p>
 <main>
   <div class="filters">
     <button class="filter-btn active" onclick="filterCards('all',this)">All</button>
@@ -626,21 +650,6 @@
   <div style="height:2.5rem"></div>
 </section>
 
-<!-- ============ TAB: RESEARCH ============ -->
-<section class="tab-panel" id="panel-research">
-  <div class="panel-head">
-    <div>
-      <h2>Research <span>Papers</span></h2>
-      <p>Manuscripts from first draft to acceptance.</p>
-    </div>
-    <button class="btn" onclick="openPaperForm()">+ Add Paper</button>
-  </div>
-
-  <div class="stat-row" id="research-stats"></div>
-  <div class="entry-list" id="research-list"></div>
-  <div style="height:2.5rem"></div>
-</section>
-
 <!-- ============ GENERIC ENTRY MODAL ============ -->
 <div class="modal-overlay" id="entry-modal" onclick="if(event.target===this)closeEntry()">
   <div class="modal" role="dialog" aria-modal="true" style="max-width:620px">
@@ -946,6 +955,7 @@
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     localStorage.setItem('edu_activeTab', tab);
+    if (tab === 'overview') renderOverview();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -1260,11 +1270,69 @@
   function closeEntry() { document.getElementById('entry-modal').classList.remove('open'); }
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEntry(); });
 
+  // ======================= OVERVIEW =======================
+  function confSubmittedCount() {
+    return Object.keys(submissions).reduce((n, k) => n + submissions[k].length, 0);
+  }
+  function nextConfDeadline() {
+    let best = null;
+    document.querySelectorAll('#panel-research .card').forEach(card => {
+      const dl = card.dataset.deadline; if (!dl) return;
+      if (daysUntil(dl) < 0) return;
+      const name = (card.querySelector('.conf-name a') || {}).textContent || '';
+      if (!best || deadlineSerial(dl) < deadlineSerial(best.dl)) best = { dl, name: name.trim() };
+    });
+    return best;
+  }
+  function renderOverview() {
+    const ielts = getIelts();
+    const uni = load('edu_uni', []);
+    const docs = load('edu_docs', []);
+    const research = load('edu_research', []);
+
+    const cdEx = countdownBig(ielts.examDate);
+    const submittedSet = ['Submitted', 'Under Review', 'Accepted'];
+    const papersSubmitted = confSubmittedCount() + research.filter(p => submittedSet.includes(p.status)).length;
+    const uniApplied = uni.filter(u => u.status !== 'Researching').length;
+    const docsReady = docs.filter(d => d.status === 'Ready' || d.status === 'Notarized').length;
+    const docsPct = docs.length ? Math.round((docsReady / docs.length) * 100) : 0;
+
+    document.getElementById('ov-stats').innerHTML = [
+      { l: 'IELTS Exam In', v: cdEx.txt, c: 'stat-accent', s: ielts.examDate ? prettyDate(ielts.examDate) : 'no date set', tab: 'ielts' },
+      { l: 'Papers Submitted', v: papersSubmitted, c: 'stat-green', s: research.length + ' tracked', tab: 'research' },
+      { l: 'Uni Applications', v: uniApplied, c: 'stat-violet', s: 'of ' + uni.length + ' targets', tab: 'uni' },
+      { l: 'Documents Ready', v: docsPct + '%', c: 'stat-amber', s: docsReady + ' / ' + docs.length + ' ready', tab: 'docs' }
+    ].map(t => '<div class="stat-tile" style="cursor:pointer" onclick="gotoTab(\'' + t.tab + '\')">' +
+      '<div class="stat-label">' + t.l + '</div>' +
+      '<div class="stat-val ' + t.c + '">' + t.v + '</div>' +
+      '<div class="stat-sub">' + t.s + '</div></div>').join('');
+
+    const nextSch = uni.filter(u => u.deadline && daysUntil(u.deadline) >= 0)
+      .sort((a, b) => deadlineSerial(a.deadline) - deadlineSerial(b.deadline))[0];
+    const nextConf = nextConfDeadline();
+    const rows = [
+      { l: 'Next IELTS Exam', ds: ielts.examDate, extra: '' },
+      { l: 'Next Scholarship', ds: nextSch ? nextSch.deadline : '', extra: nextSch ? nextSch.name : '' },
+      { l: 'Next Conference', ds: nextConf ? nextConf.dl : '', extra: nextConf ? nextConf.name : '' }
+    ];
+    document.getElementById('ov-deadlines').innerHTML = rows.map(r => {
+      const cd = countdownBig(r.ds);
+      return '<div class="stat-tile"><div class="stat-label">' + r.l + '</div>' +
+        '<div class="stat-val stat-accent" style="font-size:1.3rem">' + cd.txt + '</div>' +
+        '<div class="stat-sub">' + (r.ds ? prettyDate(r.ds) + (r.extra ? ' · ' + esc(r.extra) : '') : '—') + '</div></div>';
+    }).join('');
+  }
+  function gotoTab(tab) {
+    const btn = document.querySelector('.tab-btn[data-tab="' + tab + '"]');
+    if (btn) switchTab(tab, btn);
+  }
+
   // ---- init ----
   renderIelts();
   renderUni();
   renderDocs();
   renderResearch();
+  renderOverview();
   (function restoreTab() {
     const t = localStorage.getItem('edu_activeTab');
     if (t && document.getElementById('panel-' + t)) {
