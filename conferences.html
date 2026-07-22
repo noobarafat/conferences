@@ -221,7 +221,7 @@
   .entry-meta b { color: var(--text); font-weight: 500; }
   .entry-notes { font-size: .78rem; color: var(--muted); margin-top: .7rem; padding-top: .7rem; border-top: 1px dashed var(--border); line-height: 1.55; }
   .entry-actions { display: flex; gap: .4rem; flex-shrink: 0; }
-  .icon-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); width: 30px; height: 30px; border-radius: 7px; cursor: pointer; font-size: .82rem; transition: all .2s; display: flex; align-items: center; justify-content: center; }
+  .icon-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); width: 30px; height: 30px; border-radius: 7px; cursor: pointer; font-size: .82rem; transition: all .2s; display: flex; align-items: center; justify-content: center; text-decoration: none; }
   .icon-btn:hover { color: var(--accent); border-color: var(--accent); }
   .icon-btn.del:hover { color: var(--red); border-color: var(--red); }
   .empty-state { padding: 3rem 3rem; text-align: center; color: var(--muted); font-size: .85rem; }
@@ -303,9 +303,12 @@
   <div class="panel-head">
     <div>
       <h2>Research <span>Papers</span></h2>
-      <p>Manuscripts from first draft to acceptance, plus live conference deadlines.</p>
+      <p>Manuscripts from first draft to publication, plus live conference deadlines.</p>
     </div>
-    <button class="btn" onclick="openPaperForm()">+ Add Paper</button>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+      <a class="btn btn-ghost" href="https://www.researchgate.net/profile/K-M-Arafat-Islam" target="_blank" rel="noopener" style="text-decoration:none">🎓 ResearchGate</a>
+      <button class="btn" onclick="openPaperForm()">+ Add Paper</button>
+    </div>
   </div>
   <div class="stat-row" id="research-stats"></div>
   <div class="entry-list" id="research-list"></div>
@@ -1173,10 +1176,49 @@
   }
 
   // ======================= RESEARCH =======================
-  const PAPER_STATUS = ['Writing', 'Submitted', 'Under Review', 'Accepted', 'Rejected'];
-  const paperPill = { 'Writing': 'pill-muted', 'Submitted': 'pill-blue', 'Under Review': 'pill-amber', 'Accepted': 'pill-green', 'Rejected': 'pill-red' };
+  const PAPER_STATUS = ['Writing', 'Submitted', 'Under Review', 'Accepted', 'Published', 'Rejected'];
+  const paperPill = { 'Writing': 'pill-muted', 'Submitted': 'pill-blue', 'Under Review': 'pill-amber', 'Accepted': 'pill-green', 'Published': 'pill-violet', 'Rejected': 'pill-red' };
+
+  const RG_PROFILE = 'https://www.researchgate.net/profile/K-M-Arafat-Islam';
+
+  /* 8 published papers — replace placeholder titles with real ones from ResearchGate */
+  const PUBLISHED_PAPERS = [
+    { title: 'Published Paper 1 — replace with real title', venue: 'ResearchGate', year: '' },
+    { title: 'Published Paper 2 — replace with real title', venue: 'ResearchGate', year: '' },
+    { title: 'Published Paper 3 — replace with real title', venue: 'ResearchGate', year: '' },
+    { title: 'Published Paper 4 — replace with real title', venue: 'ResearchGate', year: '' },
+    { title: 'Published Paper 5 — replace with real title', venue: 'ResearchGate', year: '' },
+    { title: 'Published Paper 6 — replace with real title', venue: 'ResearchGate', year: '' },
+    { title: 'Published Paper 7 — replace with real title', venue: 'ResearchGate', year: '' },
+    { title: 'Published Paper 8 — replace with real title', venue: 'ResearchGate', year: '' }
+  ];
+
+  // virtual papers auto-linked from conference submissions (submitted → under review)
+  function confLinkedPapers() {
+    const out = [];
+    Object.keys(submissions).forEach(conf => {
+      submissions[conf].forEach(title => out.push({ title, venue: conf, status: 'Under Review', source: 'conf' }));
+    });
+    return out;
+  }
+  function publishedLinkedPapers() {
+    return PUBLISHED_PAPERS.map(p => ({
+      title: p.title, venue: p.venue || 'ResearchGate', status: 'Published',
+      year: p.year || '', link: RG_PROFILE, source: 'rg'
+    }));
+  }
+
+  function allPapers() {
+    // conference-linked + published (locked) + user-added
+    return [
+      ...confLinkedPapers(),
+      ...publishedLinkedPapers(),
+      ...load('edu_research', []).map(p => ({ ...p, source: 'user' }))
+    ];
+  }
+
   function renderResearch() {
-    const list = load('edu_research', []);
+    const list = allPapers();
     const counts = {};
     PAPER_STATUS.forEach(s => counts[s] = 0);
     list.forEach(p => { if (counts[p.status] != null) counts[p.status]++; });
@@ -1186,24 +1228,34 @@
       { l: 'Submitted', v: counts['Submitted'], c: 'stat-accent' },
       { l: 'Under Review', v: counts['Under Review'], c: 'stat-amber' },
       { l: 'Accepted', v: counts['Accepted'], c: 'stat-green' },
+      { l: 'Published', v: counts['Published'], c: 'stat-violet' },
       { l: 'Rejected', v: counts['Rejected'], c: 'stat-red' }
     ];
     document.getElementById('research-stats').innerHTML = tiles.map(t =>
       '<div class="stat-tile"><div class="stat-label">' + t.l + '</div>' +
       '<div class="stat-val ' + t.c + '">' + t.v + '</div></div>').join('');
 
+    const srcTag = { conf: '<span class="pill pill-blue">🔗 Conference</span>', rg: '<span class="pill pill-violet">🎓 ResearchGate</span>' };
     const el = document.getElementById('research-list');
     if (!list.length) { el.innerHTML = emptyState('🔬', 'No papers yet. Add your first manuscript.'); return; }
-    el.innerHTML = list.map(p => '<div class="entry"><div class="entry-top"><div>' +
-      '<div class="entry-title">' + esc(p.title || 'Untitled') + '</div>' +
-      '<div class="entry-meta">' +
-      (p.venue ? '<span>🎯 <b>' + esc(p.venue) + '</b></span>' : '') +
-      (p.date ? '<span>📅 <b>' + prettyDate(p.date) + '</b></span>' : '') +
-      '</div></div><div class="entry-actions">' +
-      '<span class="pill ' + (paperPill[p.status] || 'pill-muted') + '">' + esc(p.status) + '</span>' +
-      '<button class="icon-btn" onclick="editPaper(\'' + p.id + '\')" title="Edit">✎</button>' +
-      '<button class="icon-btn del" onclick="delEntry(\'edu_research\',\'' + p.id + '\',renderResearch)" title="Delete">🗑</button>' +
-      '</div></div></div>').join('');
+    el.innerHTML = list.map(p => {
+      const locked = p.source !== 'user';
+      const actions = locked
+        ? (p.link ? '<a class="icon-btn" href="' + esc(p.link) + '" target="_blank" rel="noopener" title="Open">↗</a>' : '')
+        : '<button class="icon-btn" onclick="editPaper(\'' + p.id + '\')" title="Edit">✎</button>' +
+          '<button class="icon-btn del" onclick="delEntry(\'edu_research\',\'' + p.id + '\',renderResearch)" title="Delete">🗑</button>';
+      return '<div class="entry"><div class="entry-top"><div>' +
+        '<div class="entry-title">' + esc(p.title || 'Untitled') + '</div>' +
+        '<div class="entry-meta">' +
+        (p.venue ? '<span>🎯 <b>' + esc(p.venue) + '</b></span>' : '') +
+        (p.date ? '<span>📅 <b>' + prettyDate(p.date) + '</b></span>' : '') +
+        (p.year ? '<span>📅 <b>' + esc(p.year) + '</b></span>' : '') +
+        (locked ? '<span>' + srcTag[p.source] + '</span>' : '') +
+        '</div></div><div class="entry-actions">' +
+        '<span class="pill ' + (paperPill[p.status] || 'pill-muted') + '">' + esc(p.status) + '</span>' +
+        actions +
+        '</div></div></div>';
+    }).join('');
   }
   function paperFields(p) {
     return [
@@ -1290,17 +1342,20 @@
     const docs = load('edu_docs', []);
     const research = load('edu_research', []);
 
+    const papers = allPapers();
     const cdEx = countdownBig(ielts.examDate);
-    const submittedSet = ['Submitted', 'Under Review', 'Accepted'];
-    const papersSubmitted = confSubmittedCount() + research.filter(p => submittedSet.includes(p.status)).length;
+    const submittedSet = ['Submitted', 'Under Review'];
+    const papersSubmitted = papers.filter(p => submittedSet.includes(p.status)).length;
+    const papersPublished = papers.filter(p => p.status === 'Published').length;
     const uniApplied = uni.filter(u => u.status !== 'Researching').length;
     const docsReady = docs.filter(d => d.status === 'Ready' || d.status === 'Notarized').length;
     const docsPct = docs.length ? Math.round((docsReady / docs.length) * 100) : 0;
 
     document.getElementById('ov-stats').innerHTML = [
       { l: 'IELTS Exam In', v: cdEx.txt, c: 'stat-accent', s: ielts.examDate ? prettyDate(ielts.examDate) : 'no date set', tab: 'ielts' },
-      { l: 'Papers Submitted', v: papersSubmitted, c: 'stat-green', s: research.length + ' tracked', tab: 'research' },
-      { l: 'Uni Applications', v: uniApplied, c: 'stat-violet', s: 'of ' + uni.length + ' targets', tab: 'uni' },
+      { l: 'Papers Submitted', v: papersSubmitted, c: 'stat-amber', s: 'submitted / under review', tab: 'research' },
+      { l: 'Papers Published', v: papersPublished, c: 'stat-violet', s: 'of ' + papers.length + ' total', tab: 'research' },
+      { l: 'Uni Applications', v: uniApplied, c: 'stat-green', s: 'of ' + uni.length + ' targets', tab: 'uni' },
       { l: 'Documents Ready', v: docsPct + '%', c: 'stat-amber', s: docsReady + ' / ' + docs.length + ' ready', tab: 'docs' }
     ].map(t => '<div class="stat-tile" style="cursor:pointer" onclick="gotoTab(\'' + t.tab + '\')">' +
       '<div class="stat-label">' + t.l + '</div>' +
