@@ -164,10 +164,103 @@
 
   footer { border-top: 1px solid var(--border); padding: 1.4rem 3rem; font-size: .73rem; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
 
+  /* ===== TAB NAV ===== */
+  .tab-nav { display: flex; gap: .35rem; padding: 0 3rem; border-bottom: 1px solid var(--border); background: var(--surface); overflow-x: auto; position: sticky; top: 0; z-index: 30; }
+  .tab-nav::-webkit-scrollbar { height: 0; }
+  .tab-btn { font-family: 'Space Mono', monospace; font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; padding: 1rem 1.1rem; border: none; background: transparent; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: color .2s, border-color .2s; white-space: nowrap; display: flex; align-items: center; gap: .45rem; }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-btn .tab-ico { font-size: .95rem; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn .25s ease; }
+
+  /* ===== SHARED PANEL CHROME ===== */
+  .panel-head { padding: 2.6rem 3rem 0; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+  .panel-head h2 { font-size: clamp(1.4rem,3vw,2rem); font-weight: 600; letter-spacing: -.02em; }
+  .panel-head h2 span { color: var(--accent); }
+  .panel-head p { font-size: .84rem; color: var(--muted); margin-top: .5rem; max-width: 480px; line-height: 1.6; }
+  .btn { font-family: 'Space Mono', monospace; font-size: .7rem; letter-spacing: .05em; text-transform: uppercase; padding: .6rem 1.1rem; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; transition: all .2s; white-space: nowrap; }
+  .btn:hover { background: transparent; color: var(--accent); }
+  .btn-ghost { background: transparent; color: var(--muted); border-color: var(--border); }
+  .btn-ghost:hover { color: var(--accent); border-color: var(--accent); }
+  .btn-danger { background: transparent; color: var(--red); border-color: rgba(255,95,95,.4); }
+  .btn-danger:hover { background: rgba(255,95,95,.12); border-color: var(--red); }
+  .btn-sm { padding: .35rem .7rem; font-size: .62rem; }
+
+  /* ===== STAT TILES ===== */
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 1rem; padding: 1.8rem 3rem 0; }
+  .stat-tile { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.3rem; }
+  .stat-tile .stat-label { font-family: 'Space Mono', monospace; font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: .5rem; }
+  .stat-tile .stat-val { font-size: 1.7rem; font-weight: 600; font-family: 'Space Mono', monospace; letter-spacing: -.02em; }
+  .stat-tile .stat-sub { font-size: .72rem; color: var(--muted); margin-top: .3rem; }
+  .stat-accent { color: var(--accent); } .stat-green { color: var(--green); } .stat-amber { color: var(--amber); } .stat-red { color: var(--red); } .stat-violet { color: var(--accent2); }
+
+  /* ===== PROGRESS BARS ===== */
+  .prog-track { height: 8px; background: var(--surface2); border-radius: 6px; overflow: hidden; margin-top: .5rem; }
+  .prog-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .4s ease; }
+  .prog-fill.g { background: linear-gradient(90deg, var(--green), var(--accent)); }
+  .prog-fill.a { background: linear-gradient(90deg, var(--amber), #ffb347); }
+
+  /* ===== IELTS SECTION CARDS ===== */
+  .ielts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px,1fr)); gap: 1rem; padding: 1.8rem 3rem 0; }
+  .ielts-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.3rem 1.4rem; }
+  .ielts-card h4 { font-size: .95rem; font-weight: 600; display: flex; align-items: center; justify-content: space-between; }
+  .ielts-card .band { font-family: 'Space Mono', monospace; }
+  .ielts-card .band b { color: var(--accent); font-size: 1.15rem; }
+  .ielts-card .band-target { color: var(--muted); font-size: .8rem; }
+  .ielts-card .rng { width: 100%; margin-top: .9rem; accent-color: var(--accent); }
+  .ielts-card .rng-labels { display: flex; justify-content: space-between; font-size: .6rem; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: .2rem; }
+
+  /* ===== DATA TABLES / LIST ROWS ===== */
+  .entry-list { padding: 1.5rem 3rem 0; display: flex; flex-direction: column; gap: .8rem; }
+  .entry { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1.4rem; transition: border-color .2s, transform .2s; animation: fadeUp .3s ease both; }
+  .entry:hover { border-color: #353c55; transform: translateY(-2px); }
+  .entry-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+  .entry-title { font-size: 1rem; font-weight: 600; }
+  .entry-meta { font-size: .76rem; color: var(--muted); margin-top: .3rem; line-height: 1.5; display: flex; flex-wrap: wrap; gap: .3rem 1rem; }
+  .entry-meta b { color: var(--text); font-weight: 500; }
+  .entry-notes { font-size: .78rem; color: var(--muted); margin-top: .7rem; padding-top: .7rem; border-top: 1px dashed var(--border); line-height: 1.55; }
+  .entry-actions { display: flex; gap: .4rem; flex-shrink: 0; }
+  .icon-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); width: 30px; height: 30px; border-radius: 7px; cursor: pointer; font-size: .82rem; transition: all .2s; display: flex; align-items: center; justify-content: center; }
+  .icon-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .icon-btn.del:hover { color: var(--red); border-color: var(--red); }
+  .empty-state { padding: 3rem 3rem; text-align: center; color: var(--muted); font-size: .85rem; }
+  .empty-state .es-ico { font-size: 2rem; display: block; margin-bottom: .6rem; opacity: .5; }
+
+  /* ===== STATUS PILLS ===== */
+  .pill { font-family: 'Space Mono', monospace; font-size: .58rem; letter-spacing: .05em; text-transform: uppercase; padding: .22rem .6rem; border-radius: 20px; white-space: nowrap; }
+  .pill-green { background: rgba(46,204,138,.15); color: var(--green); }
+  .pill-amber { background: rgba(245,166,35,.15); color: var(--amber); }
+  .pill-red   { background: rgba(255,95,95,.15); color: var(--red); }
+  .pill-blue  { background: rgba(79,141,255,.15); color: var(--accent); }
+  .pill-violet{ background: rgba(124,92,252,.15); color: var(--accent2); }
+  .pill-muted { background: var(--surface2); color: var(--muted); }
+
+  /* ===== FORM (modal) ===== */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .field label { display: block; font-family: 'Space Mono', monospace; font-size: .6rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: .35rem; }
+  .field input, .field select, .field textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: .6rem .75rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: .85rem; transition: border-color .2s; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); }
+  .field textarea { resize: vertical; min-height: 70px; }
+  .field input[type=range] { padding: 0; accent-color: var(--accent); }
+  .form-actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1.4rem; }
+
+  /* IELTS exam countdown hero */
+  .exam-hero { background: linear-gradient(135deg, var(--surface2), var(--surface)); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem 1.7rem; margin: 1.8rem 3rem 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+  .exam-hero .eh-label { font-family: 'Space Mono', monospace; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .exam-hero .eh-count { font-family: 'Space Mono', monospace; font-size: 2.4rem; font-weight: 700; color: var(--accent); line-height: 1; margin-top: .3rem; }
+  .exam-hero .eh-date { font-size: .82rem; color: var(--text); margin-top: .4rem; }
+
   @media (max-width: 640px) {
     header,main,footer { padding-left: 1.25rem; padding-right: 1.25rem; }
     .cards { grid-template-columns: 1fr; }
     .dates-grid { grid-template-columns: 1fr; }
+    .tab-nav { padding: 0 .75rem; }
+    .tab-btn { padding: .85rem .7rem; font-size: .64rem; }
+    .panel-head, .stat-row, .ielts-grid, .entry-list, .exam-hero, .empty-state { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .exam-hero { margin-left: 1.25rem; margin-right: 1.25rem; }
+    .form-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -176,23 +269,33 @@
 <header>
   <div class="header-top">
     <div>
-      <p class="header-label">Research · Bangladesh · 2026–2027</p>
-      <h1>Conference <span>Deadlines</span></h1>
-      <p class="header-sub">Upcoming conferences sorted by paper submission deadline. Click any conference name to visit the official website.</p>
-      <div class="filters">
-        <button class="filter-btn active" onclick="filterCards('all',this)">All</button>
-        <button class="filter-btn" onclick="filterCards('urgent',this)">Urgent (&le;30 days)</button>
-        <button class="filter-btn" onclick="filterCards('open',this)">Open</button>
-        <button class="filter-btn filter-ended" onclick="filterCards('ended',this)">Ended <span id="ended-count">0</span></button>
-        <button class="filter-btn filter-papers" onclick="openPapers()">📄 My Papers <span id="paper-count">0</span></button>
-      </div>
+      <p class="header-label">Education Dashboard · Bangladesh · 2026–2027</p>
+      <h1>Education <span>Dashboard</span></h1>
+      <p class="header-sub">Conferences, IELTS prep, university applications, documents and research — all in one place.</p>
     </div>
     <div class="today-badge" aria-live="polite">Today<strong id="today-date">—</strong><span class="today-time" id="current-time">—</span></div>
   </div>
 </header>
 
+<nav class="tab-nav" id="tab-nav">
+  <button class="tab-btn active" data-tab="conferences" onclick="switchTab('conferences',this)"><span class="tab-ico">🎓</span>Conferences</button>
+  <button class="tab-btn" data-tab="ielts" onclick="switchTab('ielts',this)"><span class="tab-ico">📝</span>IELTS Tracker</button>
+  <button class="tab-btn" data-tab="uni" onclick="switchTab('uni',this)"><span class="tab-ico">🏛️</span>Universities</button>
+  <button class="tab-btn" data-tab="docs" onclick="switchTab('docs',this)"><span class="tab-ico">📁</span>Documents</button>
+  <button class="tab-btn" data-tab="research" onclick="switchTab('research',this)"><span class="tab-ico">🔬</span>Research</button>
+</nav>
+
+<!-- ============ TAB: CONFERENCES ============ -->
+<section class="tab-panel active" id="panel-conferences">
 <main>
-  <p class="section-label">Open for submission · sorted by deadline</p>
+  <div class="filters">
+    <button class="filter-btn active" onclick="filterCards('all',this)">All</button>
+    <button class="filter-btn" onclick="filterCards('urgent',this)">Urgent (&le;30 days)</button>
+    <button class="filter-btn" onclick="filterCards('open',this)">Open</button>
+    <button class="filter-btn filter-ended" onclick="filterCards('ended',this)">Ended <span id="ended-count">0</span></button>
+    <button class="filter-btn filter-papers" onclick="openPapers()">📄 My Papers <span id="paper-count">0</span></button>
+  </div>
+  <p class="section-label" style="margin-top:1.6rem">Open for submission · sorted by deadline</p>
   <div class="cards">
 
     <!-- 2. ICISET 2026 — Aug 1 (extended) -->
@@ -425,6 +528,140 @@
 
   </div>
 </main>
+</section>
+
+<!-- ============ TAB: IELTS ============ -->
+<section class="tab-panel" id="panel-ielts">
+  <div class="panel-head">
+    <div>
+      <h2>IELTS <span>Tracker</span></h2>
+      <p>Band progress by section, exam countdown and weekly study hours.</p>
+    </div>
+    <button class="btn btn-ghost" onclick="openIeltsSettings()">⚙ Settings</button>
+  </div>
+
+  <div class="exam-hero">
+    <div>
+      <div class="eh-label">Countdown to exam</div>
+      <div class="eh-count" id="ielts-countdown">—</div>
+      <div class="eh-date" id="ielts-exam-line">No exam date set</div>
+    </div>
+    <div style="text-align:right">
+      <div class="eh-label">Registration</div>
+      <div id="ielts-reg-pill" style="margin-top:.4rem"></div>
+      <div class="eh-label" style="margin-top:.9rem">Overall target</div>
+      <div class="eh-count" id="ielts-target" style="font-size:1.6rem">7.5</div>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-tile">
+      <div class="stat-label">Current Overall</div>
+      <div class="stat-val stat-accent" id="ielts-overall">—</div>
+      <div class="stat-sub">avg of 4 sections</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-label">Study Hours · This Week</div>
+      <div class="stat-val stat-green" id="ielts-hours">0</div>
+      <div class="stat-sub"><button class="btn btn-ghost btn-sm" onclick="logHours()">+ Log hours</button></div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-label">Gap to Target</div>
+      <div class="stat-val stat-amber" id="ielts-gap">—</div>
+      <div class="stat-sub">bands to gain</div>
+    </div>
+  </div>
+
+  <div class="ielts-grid" id="ielts-sections"></div>
+  <div style="height:2.5rem"></div>
+</section>
+
+<!-- ============ TAB: UNIVERSITIES ============ -->
+<section class="tab-panel" id="panel-uni">
+  <div class="panel-head">
+    <div>
+      <h2>Universities &amp; <span>Scholarship</span></h2>
+      <p>Target universities, application status and scholarship deadlines.</p>
+    </div>
+    <button class="btn" onclick="openUniForm()">+ Add University</button>
+  </div>
+
+  <div class="exam-hero">
+    <div>
+      <div class="eh-label">Next scholarship deadline</div>
+      <div class="eh-count" id="uni-countdown">—</div>
+      <div class="eh-date" id="uni-countdown-line">No upcoming deadlines</div>
+    </div>
+    <div style="text-align:right">
+      <div class="eh-label">Applications</div>
+      <div class="eh-count" id="uni-applied" style="font-size:1.6rem">0</div>
+      <div class="eh-date">of <span id="uni-total">0</span> targets</div>
+    </div>
+  </div>
+
+  <div class="entry-list" id="uni-list"></div>
+  <div style="height:2.5rem"></div>
+</section>
+
+<!-- ============ TAB: DOCUMENTS ============ -->
+<section class="tab-panel" id="panel-docs">
+  <div class="panel-head">
+    <div>
+      <h2>Application <span>Documents</span></h2>
+      <p>Track readiness of every document you need.</p>
+    </div>
+    <button class="btn" onclick="openDocForm()">+ Add Document</button>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-tile" style="grid-column:1/-1">
+      <div class="stat-label">Overall Readiness</div>
+      <div class="stat-val stat-green" id="docs-pct">0%</div>
+      <div class="prog-track"><div class="prog-fill g" id="docs-bar" style="width:0%"></div></div>
+      <div class="stat-sub"><span id="docs-ready">0</span> ready / <span id="docs-total">0</span> total</div>
+    </div>
+  </div>
+
+  <div class="entry-list" id="docs-list"></div>
+  <div style="height:2.5rem"></div>
+</section>
+
+<!-- ============ TAB: RESEARCH ============ -->
+<section class="tab-panel" id="panel-research">
+  <div class="panel-head">
+    <div>
+      <h2>Research <span>Papers</span></h2>
+      <p>Manuscripts from first draft to acceptance.</p>
+    </div>
+    <button class="btn" onclick="openPaperForm()">+ Add Paper</button>
+  </div>
+
+  <div class="stat-row" id="research-stats"></div>
+  <div class="entry-list" id="research-list"></div>
+  <div style="height:2.5rem"></div>
+</section>
+
+<!-- ============ GENERIC ENTRY MODAL ============ -->
+<div class="modal-overlay" id="entry-modal" onclick="if(event.target===this)closeEntry()">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:620px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="entry-title">Add</div>
+        <div class="modal-sub" id="entry-sub"></div>
+      </div>
+      <button class="modal-close" onclick="closeEntry()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="entry-form" onsubmit="return saveEntry(event)">
+        <div class="form-grid" id="entry-fields"></div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeEntry()">Cancel</button>
+          <button type="submit" class="btn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="papers-modal" onclick="if(event.target===this)closePapers()">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -697,6 +934,344 @@
 
   refreshLiveData();
   setInterval(refreshLiveData, 1000);
+
+  /* ========================================================
+     EDUCATION DASHBOARD — tabs + localStorage modules
+     ======================================================== */
+
+  // ---- tab switching ----
+  function switchTab(tab, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + tab).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    localStorage.setItem('edu_activeTab', tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ---- storage helpers ----
+  function load(key, fallback) {
+    try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; }
+    catch (e) { return fallback; }
+  }
+  function save(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  function prettyDate(ds) {
+    if (!ds) return '—';
+    const [y, m, d] = ds.split('-').map(Number);
+    return dateFormatter.format(new Date(Date.UTC(y, m - 1, d)));
+  }
+  function countdownBig(ds) {
+    if (!ds) return { txt: '—', line: '' };
+    const days = daysUntil(ds);
+    if (days < 0) return { txt: 'Passed', line: prettyDate(ds) };
+    if (days === 0) return { txt: 'Today', line: prettyDate(ds) };
+    return { txt: days + (days === 1 ? ' day' : ' days'), line: prettyDate(ds) };
+  }
+
+  // ======================= IELTS =======================
+  const IELTS_SECTIONS = ['Listening', 'Reading', 'Writing', 'Speaking'];
+  function ieltsDefault() {
+    return {
+      target: 7.5, examDate: '', reg: 'Not registered', hours: 0, weekKey: currentWeekKey(),
+      sections: { Listening: { cur: 6, target: 7.5 }, Reading: { cur: 6, target: 7.5 }, Writing: { cur: 6, target: 7 }, Speaking: { cur: 6, target: 7 } }
+    };
+  }
+  function currentWeekKey() {
+    const p = bdDateParts();
+    const dt = new Date(Date.UTC(p.year, p.month - 1, p.day));
+    const day = (dt.getUTCDay() + 6) % 7;              // Mon=0
+    dt.setUTCDate(dt.getUTCDate() - day + 3);          // Thursday of ISO week
+    const firstThu = new Date(Date.UTC(dt.getUTCFullYear(), 0, 4));
+    const week = 1 + Math.round(((dt - firstThu) / DAY_MS - 3 + ((firstThu.getUTCDay() + 6) % 7)) / 7);
+    return dt.getUTCFullYear() + '-W' + String(week).padStart(2, '0');
+  }
+  function getIelts() {
+    const d = load('edu_ielts', ieltsDefault());
+    if (d.weekKey !== currentWeekKey()) { d.weekKey = currentWeekKey(); d.hours = 0; save('edu_ielts', d); }
+    return d;
+  }
+  const regPill = { 'Registered': 'pill-green', 'Not registered': 'pill-red', 'Pending': 'pill-amber' };
+  function renderIelts() {
+    const d = getIelts();
+    const cd = countdownBig(d.examDate);
+    document.getElementById('ielts-countdown').textContent = cd.txt;
+    document.getElementById('ielts-exam-line').textContent = d.examDate ? prettyDate(d.examDate) : 'No exam date set';
+    document.getElementById('ielts-target').textContent = d.target.toFixed(1);
+    document.getElementById('ielts-hours').textContent = d.hours;
+    document.getElementById('ielts-reg-pill').innerHTML =
+      '<span class="pill ' + (regPill[d.reg] || 'pill-muted') + '">' + esc(d.reg) + '</span>';
+
+    const vals = IELTS_SECTIONS.map(s => d.sections[s].cur);
+    const overall = Math.round((vals.reduce((a, b) => a + b, 0) / 4) * 2) / 2;
+    document.getElementById('ielts-overall').textContent = overall.toFixed(1);
+    const gap = Math.max(0, d.target - overall);
+    document.getElementById('ielts-gap').textContent = gap === 0 ? '✓ Met' : '+' + gap.toFixed(1);
+
+    document.getElementById('ielts-sections').innerHTML = IELTS_SECTIONS.map(s => {
+      const sec = d.sections[s];
+      const pct = Math.min(100, (sec.cur / 9) * 100);
+      const cls = sec.cur >= sec.target ? 'g' : (sec.cur >= sec.target - 1 ? 'a' : '');
+      return '<div class="ielts-card">' +
+        '<h4>' + s + '<span class="band"><b>' + sec.cur.toFixed(1) + '</b> <span class="band-target">/ ' + sec.target.toFixed(1) + '</span></span></h4>' +
+        '<div class="prog-track"><div class="prog-fill ' + cls + '" style="width:' + pct + '%"></div></div>' +
+        '<input class="rng" type="range" min="0" max="9" step="0.5" value="' + sec.cur + '" oninput="setBand(\'' + s + '\',this.value)">' +
+        '<div class="rng-labels"><span>0</span><span>current band</span><span>9</span></div>' +
+        '</div>';
+    }).join('');
+  }
+  function setBand(section, val) {
+    const d = getIelts();
+    d.sections[section].cur = parseFloat(val);
+    save('edu_ielts', d);
+    renderIelts();
+  }
+  function logHours() {
+    const v = prompt('Hours to add this week:', '2');
+    if (v == null) return;
+    const n = parseFloat(v);
+    if (isNaN(n)) return;
+    const d = getIelts();
+    d.hours = Math.max(0, Math.round((d.hours + n) * 2) / 2);
+    save('edu_ielts', d);
+    renderIelts();
+  }
+  function openIeltsSettings() {
+    const d = getIelts();
+    openForm({
+      title: 'IELTS Settings', sub: 'Exam date, target and per-section goals',
+      fields: [
+        { k: 'target', label: 'Overall Target', type: 'number', step: '0.5', min: '0', max: '9', val: d.target },
+        { k: 'examDate', label: 'Exam Date', type: 'date', val: d.examDate },
+        { k: 'reg', label: 'Registration', type: 'select', opts: ['Not registered', 'Pending', 'Registered'], val: d.reg },
+        { k: 'tListening', label: 'Target · Listening', type: 'number', step: '0.5', min: '0', max: '9', val: d.sections.Listening.target },
+        { k: 'tReading', label: 'Target · Reading', type: 'number', step: '0.5', min: '0', max: '9', val: d.sections.Reading.target },
+        { k: 'tWriting', label: 'Target · Writing', type: 'number', step: '0.5', min: '0', max: '9', val: d.sections.Writing.target },
+        { k: 'tSpeaking', label: 'Target · Speaking', type: 'number', step: '0.5', min: '0', max: '9', val: d.sections.Speaking.target }
+      ],
+      onSave: f => {
+        d.target = parseFloat(f.target) || 7.5;
+        d.examDate = f.examDate; d.reg = f.reg;
+        d.sections.Listening.target = parseFloat(f.tListening);
+        d.sections.Reading.target = parseFloat(f.tReading);
+        d.sections.Writing.target = parseFloat(f.tWriting);
+        d.sections.Speaking.target = parseFloat(f.tSpeaking);
+        save('edu_ielts', d);
+        renderIelts();
+      }
+    });
+  }
+
+  // ======================= UNIVERSITIES =======================
+  const UNI_STATUS = ['Researching', 'Applied', 'Accepted', 'Rejected'];
+  const uniPill = { 'Researching': 'pill-blue', 'Applied': 'pill-amber', 'Accepted': 'pill-green', 'Rejected': 'pill-red' };
+  function renderUni() {
+    const list = load('edu_uni', []);
+    const total = list.length;
+    const applied = list.filter(u => u.status !== 'Researching').length;
+    document.getElementById('uni-total').textContent = total;
+    document.getElementById('uni-applied').textContent = applied;
+
+    const upcoming = list.filter(u => u.deadline && daysUntil(u.deadline) >= 0)
+      .sort((a, b) => deadlineSerial(a.deadline) - deadlineSerial(b.deadline))[0];
+    const cd = upcoming ? countdownBig(upcoming.deadline) : { txt: '—', line: '' };
+    document.getElementById('uni-countdown').textContent = cd.txt;
+    document.getElementById('uni-countdown-line').textContent =
+      upcoming ? upcoming.name + ' · ' + prettyDate(upcoming.deadline) : 'No upcoming deadlines';
+
+    const el = document.getElementById('uni-list');
+    if (!total) { el.innerHTML = emptyState('🏛️', 'No universities yet. Add your first target.'); return; }
+    el.innerHTML = list.map(u => {
+      const dl = u.deadline ? countdownBig(u.deadline) : null;
+      return '<div class="entry">' +
+        '<div class="entry-top"><div>' +
+        '<div class="entry-title">' + esc(u.name || 'Untitled') + '</div>' +
+        '<div class="entry-meta">' +
+        (u.country ? '<span>🌍 <b>' + esc(u.country) + '</b></span>' : '') +
+        (u.program ? '<span>🎓 <b>' + esc(u.program) + '</b></span>' : '') +
+        (u.deadline ? '<span>⏳ <b>' + prettyDate(u.deadline) + '</b>' + (dl && daysUntil(u.deadline) >= 0 ? ' (' + dl.txt + ')' : '') + '</span>' : '') +
+        '</div></div>' +
+        '<div class="entry-actions">' +
+        '<span class="pill ' + (uniPill[u.status] || 'pill-muted') + '">' + esc(u.status) + '</span>' +
+        '<button class="icon-btn" onclick="editUni(\'' + u.id + '\')" title="Edit">✎</button>' +
+        '<button class="icon-btn del" onclick="delEntry(\'edu_uni\',\'' + u.id + '\',renderUni)" title="Delete">🗑</button>' +
+        '</div></div>' +
+        (u.notes ? '<div class="entry-notes">' + esc(u.notes) + '</div>' : '') +
+        '</div>';
+    }).join('');
+  }
+  function uniFields(u) {
+    return [
+      { k: 'name', label: 'University', type: 'text', val: u.name, req: true, full: true },
+      { k: 'country', label: 'Country', type: 'text', val: u.country },
+      { k: 'program', label: 'Program', type: 'text', val: u.program },
+      { k: 'deadline', label: 'Scholarship Deadline', type: 'date', val: u.deadline },
+      { k: 'status', label: 'Status', type: 'select', opts: UNI_STATUS, val: u.status || 'Researching' },
+      { k: 'notes', label: 'Notes', type: 'textarea', val: u.notes, full: true }
+    ];
+  }
+  function openUniForm() {
+    openForm({ title: 'Add University', sub: 'Target school and scholarship', fields: uniFields({}),
+      onSave: f => { const l = load('edu_uni', []); l.push({ id: uid(), ...f }); save('edu_uni', l); renderUni(); } });
+  }
+  function editUni(id) {
+    const l = load('edu_uni', []); const u = l.find(x => x.id === id); if (!u) return;
+    openForm({ title: 'Edit University', sub: esc(u.name || ''), fields: uniFields(u),
+      onSave: f => { Object.assign(u, f); save('edu_uni', l); renderUni(); } });
+  }
+
+  // ======================= DOCUMENTS =======================
+  const DOC_STATUS = ['Missing', 'Pending', 'Ready', 'Notarized'];
+  const docPill = { 'Missing': 'pill-red', 'Pending': 'pill-amber', 'Ready': 'pill-green', 'Notarized': 'pill-violet' };
+  function renderDocs() {
+    const list = load('edu_docs', []);
+    const total = list.length;
+    const ready = list.filter(d => d.status === 'Ready' || d.status === 'Notarized').length;
+    const pct = total ? Math.round((ready / total) * 100) : 0;
+    document.getElementById('docs-pct').textContent = pct + '%';
+    document.getElementById('docs-bar').style.width = pct + '%';
+    document.getElementById('docs-ready').textContent = ready;
+    document.getElementById('docs-total').textContent = total;
+
+    const el = document.getElementById('docs-list');
+    if (!total) { el.innerHTML = emptyState('📁', 'No documents yet. Add what you need to prepare.'); return; }
+    el.innerHTML = list.map(d => '<div class="entry"><div class="entry-top"><div>' +
+      '<div class="entry-title">' + esc(d.name || 'Untitled') + '</div>' +
+      (d.notes ? '<div class="entry-meta"><span>' + esc(d.notes) + '</span></div>' : '') +
+      '</div><div class="entry-actions">' +
+      '<span class="pill ' + (docPill[d.status] || 'pill-muted') + '">' + esc(d.status) + '</span>' +
+      '<button class="icon-btn" onclick="editDoc(\'' + d.id + '\')" title="Edit">✎</button>' +
+      '<button class="icon-btn del" onclick="delEntry(\'edu_docs\',\'' + d.id + '\',renderDocs)" title="Delete">🗑</button>' +
+      '</div></div></div>').join('');
+  }
+  function docFields(d) {
+    return [
+      { k: 'name', label: 'Document', type: 'text', val: d.name, req: true, full: true },
+      { k: 'status', label: 'Status', type: 'select', opts: DOC_STATUS, val: d.status || 'Missing' },
+      { k: 'notes', label: 'Notes', type: 'textarea', val: d.notes, full: true }
+    ];
+  }
+  function openDocForm() {
+    openForm({ title: 'Add Document', sub: 'Track readiness', fields: docFields({}),
+      onSave: f => { const l = load('edu_docs', []); l.push({ id: uid(), ...f }); save('edu_docs', l); renderDocs(); } });
+  }
+  function editDoc(id) {
+    const l = load('edu_docs', []); const d = l.find(x => x.id === id); if (!d) return;
+    openForm({ title: 'Edit Document', sub: esc(d.name || ''), fields: docFields(d),
+      onSave: f => { Object.assign(d, f); save('edu_docs', l); renderDocs(); } });
+  }
+
+  // ======================= RESEARCH =======================
+  const PAPER_STATUS = ['Writing', 'Submitted', 'Under Review', 'Accepted', 'Rejected'];
+  const paperPill = { 'Writing': 'pill-muted', 'Submitted': 'pill-blue', 'Under Review': 'pill-amber', 'Accepted': 'pill-green', 'Rejected': 'pill-red' };
+  function renderResearch() {
+    const list = load('edu_research', []);
+    const counts = {};
+    PAPER_STATUS.forEach(s => counts[s] = 0);
+    list.forEach(p => { if (counts[p.status] != null) counts[p.status]++; });
+    const tiles = [
+      { l: 'Total', v: list.length, c: 'stat-accent' },
+      { l: 'Writing', v: counts['Writing'], c: 'stat-muted' },
+      { l: 'Submitted', v: counts['Submitted'], c: 'stat-accent' },
+      { l: 'Under Review', v: counts['Under Review'], c: 'stat-amber' },
+      { l: 'Accepted', v: counts['Accepted'], c: 'stat-green' },
+      { l: 'Rejected', v: counts['Rejected'], c: 'stat-red' }
+    ];
+    document.getElementById('research-stats').innerHTML = tiles.map(t =>
+      '<div class="stat-tile"><div class="stat-label">' + t.l + '</div>' +
+      '<div class="stat-val ' + t.c + '">' + t.v + '</div></div>').join('');
+
+    const el = document.getElementById('research-list');
+    if (!list.length) { el.innerHTML = emptyState('🔬', 'No papers yet. Add your first manuscript.'); return; }
+    el.innerHTML = list.map(p => '<div class="entry"><div class="entry-top"><div>' +
+      '<div class="entry-title">' + esc(p.title || 'Untitled') + '</div>' +
+      '<div class="entry-meta">' +
+      (p.venue ? '<span>🎯 <b>' + esc(p.venue) + '</b></span>' : '') +
+      (p.date ? '<span>📅 <b>' + prettyDate(p.date) + '</b></span>' : '') +
+      '</div></div><div class="entry-actions">' +
+      '<span class="pill ' + (paperPill[p.status] || 'pill-muted') + '">' + esc(p.status) + '</span>' +
+      '<button class="icon-btn" onclick="editPaper(\'' + p.id + '\')" title="Edit">✎</button>' +
+      '<button class="icon-btn del" onclick="delEntry(\'edu_research\',\'' + p.id + '\',renderResearch)" title="Delete">🗑</button>' +
+      '</div></div></div>').join('');
+  }
+  function paperFields(p) {
+    return [
+      { k: 'title', label: 'Paper Title', type: 'text', val: p.title, req: true, full: true },
+      { k: 'venue', label: 'Target Conference / Journal', type: 'text', val: p.venue, full: true },
+      { k: 'status', label: 'Status', type: 'select', opts: PAPER_STATUS, val: p.status || 'Writing' },
+      { k: 'date', label: 'Submission Date', type: 'date', val: p.date }
+    ];
+  }
+  function openPaperForm() {
+    openForm({ title: 'Add Paper', sub: 'New manuscript', fields: paperFields({}),
+      onSave: f => { const l = load('edu_research', []); l.push({ id: uid(), ...f }); save('edu_research', l); renderResearch(); } });
+  }
+  function editPaper(id) {
+    const l = load('edu_research', []); const p = l.find(x => x.id === id); if (!p) return;
+    openForm({ title: 'Edit Paper', sub: esc(p.title || ''), fields: paperFields(p),
+      onSave: f => { Object.assign(p, f); save('edu_research', l); renderResearch(); } });
+  }
+
+  // ======================= SHARED: entry modal =======================
+  function emptyState(ico, msg) {
+    return '<div class="empty-state"><span class="es-ico">' + ico + '</span>' + msg + '</div>';
+  }
+  function delEntry(key, id, rerender) {
+    if (!confirm('Delete this entry?')) return;
+    save(key, load(key, []).filter(x => x.id !== id));
+    rerender();
+  }
+  let currentSave = null;
+  function openForm(cfg) {
+    document.getElementById('entry-title').textContent = cfg.title;
+    document.getElementById('entry-sub').innerHTML = cfg.sub || '';
+    const wrap = document.getElementById('entry-fields');
+    wrap.innerHTML = cfg.fields.map(f => {
+      const cls = 'field' + (f.full ? ' full' : '');
+      let ctrl;
+      const v = f.val == null ? '' : f.val;
+      if (f.type === 'select') {
+        ctrl = '<select name="' + f.k + '">' + f.opts.map(o =>
+          '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>';
+      } else if (f.type === 'textarea') {
+        ctrl = '<textarea name="' + f.k + '">' + esc(String(v)) + '</textarea>';
+      } else {
+        const attrs = (f.step ? ' step="' + f.step + '"' : '') + (f.min != null ? ' min="' + f.min + '"' : '') +
+          (f.max != null ? ' max="' + f.max + '"' : '') + (f.req ? ' required' : '');
+        ctrl = '<input type="' + f.type + '" name="' + f.k + '" value="' + esc(String(v)) + '"' + attrs + '>';
+      }
+      return '<div class="' + cls + '"><label>' + f.label + '</label>' + ctrl + '</div>';
+    }).join('');
+    currentSave = cfg.onSave;
+    document.getElementById('entry-modal').classList.add('open');
+    const first = wrap.querySelector('input,select,textarea');
+    if (first) setTimeout(() => first.focus(), 50);
+  }
+  function saveEntry(e) {
+    e.preventDefault();
+    const form = document.getElementById('entry-form');
+    const data = {};
+    new FormData(form).forEach((val, k) => data[k] = String(val).trim());
+    if (currentSave) currentSave(data);
+    closeEntry();
+    return false;
+  }
+  function closeEntry() { document.getElementById('entry-modal').classList.remove('open'); }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEntry(); });
+
+  // ---- init ----
+  renderIelts();
+  renderUni();
+  renderDocs();
+  renderResearch();
+  (function restoreTab() {
+    const t = localStorage.getItem('edu_activeTab');
+    if (t && document.getElementById('panel-' + t)) {
+      const btn = document.querySelector('.tab-btn[data-tab="' + t + '"]');
+      if (btn) switchTab(t, btn);
+    }
+  })();
 </script>
 </body>
 </html>
