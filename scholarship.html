@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scholarships · Fully Funded Masters</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #141720;
+    --surface2: #1c2030;
+    --border: #252a3a;
+    --accent: #4f8dff;
+    --accent2: #7c5cfc;
+    --green: #2ecc8a;
+    --amber: #f5a623;
+    --red: #ff5f5f;
+    --text: #e8eaf0;
+    --muted: #7a819a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ===== HEADER ===== */
+  header {
+    padding: 3.5rem 3rem 2.5rem;
+    border-bottom: 1px solid var(--border);
+    position: relative; overflow: hidden;
+  }
+  header::before {
+    content: ''; position: absolute; top: -80px; left: -80px;
+    width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(79,141,255,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header::after {
+    content: ''; position: absolute; bottom: -100px; right: -60px;
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, rgba(124,92,252,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+  .header-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .18em; color: var(--accent); text-transform: uppercase; margin-bottom: .6rem; }
+  h1 { font-size: clamp(1.8rem,4vw,2.8rem); font-weight: 600; line-height: 1.1; letter-spacing: -.02em; }
+  h1 span { color: var(--accent); }
+  .header-sub { font-size: .88rem; color: var(--muted); margin-top: .7rem; max-width: 480px; line-height: 1.6; }
+  .stat-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: .7rem 1.2rem; font-family: 'Space Mono', monospace; font-size: .72rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; line-height: 1.4; min-width: 140px; }
+  .stat-badge strong { color: var(--text); display: block; font-size: 1.35rem; margin-top: 3px; }
+  .stat-badge .accent { color: var(--accent); }
+
+  /* ===== CONTROLS ===== */
+  .controls { display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap; align-items: center; }
+  .filters { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .filter-btn { font-family: 'Space Mono', monospace; font-size: .68rem; letter-spacing: .06em; padding: .45rem .95rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all .2s; text-transform: uppercase; white-space: nowrap; }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 320px; margin-left: auto; }
+  .search-wrap svg { position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; stroke: var(--muted); pointer-events: none; }
+  #search { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: .6rem .8rem .6rem 2.2rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: .85rem; transition: border-color .2s; }
+  #search:focus { outline: none; border-color: var(--accent); }
+  #search::placeholder { color: var(--muted); }
+
+  /* country submenu */
+  .country-bar { display: none; gap: .4rem; margin-top: .9rem; flex-wrap: wrap; }
+  .country-bar.show { display: flex; }
+  .country-chip { font-family: 'Space Mono', monospace; font-size: .64rem; padding: .35rem .7rem; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; transition: all .2s; }
+  .country-chip:hover { border-color: var(--accent2); color: var(--accent2); }
+  .country-chip.active { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+
+  /* ===== MAIN / GRID ===== */
+  main { padding: 2.5rem 3rem; }
+  .section-label { font-family: 'Space Mono', monospace; font-size: .67rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-bottom: 1.1rem; display: flex; align-items: center; gap: .6rem; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+
+  /* ===== CARD ===== */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.4rem 1.5rem; position: relative; overflow: hidden; cursor: pointer; transition: transform .2s, box-shadow .2s, border-color .2s; animation: fadeUp .4s ease both; }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,.5); border-color: #353c55; }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); opacity: 0; transition: opacity .25s; }
+  .card:hover::before { opacity: 1; }
+
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: .6rem; margin-bottom: 1rem; }
+  .sch-name { font-size: 1.08rem; font-weight: 600; letter-spacing: -.01em; line-height: 1.25; }
+  .sch-country { font-size: .78rem; color: var(--muted); margin-top: .35rem; display: flex; align-items: center; gap: .35rem; }
+  .flag { font-size: 1rem; line-height: 1; }
+
+  .fund-tag { font-family: 'Space Mono', monospace; font-size: .56rem; letter-spacing: .05em; text-transform: uppercase; padding: .28rem .6rem; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .fund-full    { background: rgba(46,204,138,.15); color: var(--green); }
+  .fund-partial { background: rgba(245,166,35,.15); color: var(--amber); }
+  .fund-unknown { background: var(--surface2); color: var(--muted); }
+
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem .8rem; margin-bottom: 1rem; }
+  .meta-label { font-size: .6rem; font-family: 'Space Mono', monospace; letter-spacing: .07em; color: var(--muted); text-transform: uppercase; margin-bottom: .2rem; }
+  .meta-value { font-size: .84rem; font-weight: 500; color: var(--text); }
+
+  .card-foot { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding-top: .95rem; border-top: 1px solid var(--border); }
+  .countdown { display: flex; align-items: center; gap: .4rem; }
+  .countdown-days { font-family: 'Space Mono', monospace; font-size: .82rem; font-weight: 700; }
+  .days-open { color: var(--green); } .days-soon { color: var(--amber); } .days-closed { color: var(--red); }
+  .countdown-lbl { font-size: .6rem; font-family: 'Space Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+
+  .status-badge { font-family: 'Space Mono', monospace; font-size: .58rem; letter-spacing: .05em; text-transform: uppercase; padding: .28rem .65rem; border-radius: 20px; white-space: nowrap; display: inline-flex; align-items: center; gap: .35rem; }
+  .status-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .st-researching { background: rgba(79,141,255,.15); color: var(--accent); }
+  .st-applied     { background: rgba(245,166,35,.15); color: var(--amber); }
+  .st-accepted    { background: rgba(46,204,138,.15); color: var(--green); }
+  .st-rejected    { background: rgba(255,95,95,.15); color: var(--red); }
+
+  .card.soon { border-color: rgba(245,166,35,.4); }
+  .card.closed { opacity: .6; }
+
+  .empty { padding: 4rem 1rem; text-align: center; color: var(--muted); font-size: .9rem; grid-column: 1 / -1; }
+  .empty span { font-size: 2.2rem; display: block; margin-bottom: .7rem; opacity: .5; }
+
+  /* ===== MODAL ===== */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(6,8,12,.78); backdrop-filter: blur(4px); display: none; align-items: flex-start; justify-content: center; padding: 5vh 1.25rem; z-index: 50; overflow-y: auto; }
+  .modal-overlay.open { display: flex; animation: fadeIn .2s ease; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 620px; box-shadow: 0 24px 70px rgba(0,0,0,.6); animation: fadeUp .3s ease both; position: relative; overflow: hidden; }
+  .modal::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .modal-header { padding: 1.7rem 1.8rem 1.3rem; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .modal-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; line-height: 1.2; }
+  .modal-sub { font-size: .82rem; color: var(--muted); margin-top: .45rem; display: flex; align-items: center; gap: .4rem; }
+  .modal-close { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); width: 34px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 1.2rem; line-height: 1; flex-shrink: 0; transition: all .2s; }
+  .modal-close:hover { color: var(--red); border-color: var(--red); }
+  .modal-body { padding: 1.5rem 1.8rem 1.9rem; }
+  .modal-badges { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem 1.4rem; margin-bottom: 1.4rem; }
+  .detail-item .d-label { font-size: .62rem; font-family: 'Space Mono', monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: .3rem; }
+  .detail-item .d-value { font-size: .95rem; font-weight: 500; }
+  .modal-section { margin-top: 1.3rem; }
+  .modal-section h4 { font-family: 'Space Mono', monospace; font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: .55rem; }
+  .modal-section p { font-size: .88rem; line-height: 1.65; color: var(--text); }
+  .modal-section ul { list-style: none; }
+  .modal-section li { font-size: .86rem; line-height: 1.5; color: var(--text); padding: .4rem 0 .4rem 1.3rem; position: relative; }
+  .modal-section li::before { content: '▸'; position: absolute; left: 0; color: var(--accent2); }
+  .modal-link { display: inline-flex; align-items: center; gap: .45rem; margin-top: 1.5rem; font-family: 'Space Mono', monospace; font-size: .78rem; padding: .7rem 1.2rem; border-radius: 9px; background: var(--accent); color: #fff; text-decoration: none; transition: all .2s; }
+  .modal-link:hover { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  .card:nth-child(1){animation-delay:.03s} .card:nth-child(2){animation-delay:.07s}
+  .card:nth-child(3){animation-delay:.11s} .card:nth-child(4){animation-delay:.15s}
+  .card:nth-child(5){animation-delay:.19s} .card:nth-child(6){animation-delay:.23s}
+
+  footer { border-top: 1px solid var(--border); padding: 1.4rem 3rem; font-size: .73rem; color: var(--muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+
+  @media (max-width: 640px) {
+    header, main, footer { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .cards { grid-template-columns: 1fr; }
+    .search-wrap { margin-left: 0; max-width: none; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .modal-header, .modal-body { padding-left: 1.25rem; padding-right: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div>
+      <p class="header-label">Funding · Masters · 2026–2027</p>
+      <h1>Scholarship <span>Tracker</span></h1>
+      <p class="header-sub">Fully funded Masters scholarships. Click any card for eligibility, benefits and the official application link.</p>
+    </div>
+    <div class="stat-badge">Tracked<strong class="accent" id="total-count">0</strong>scholarships</div>
+  </div>
+
+  <div class="controls">
+    <div class="filters">
+      <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">All</button>
+      <button class="filter-btn" data-filter="full" onclick="setFilter('full',this)">Fully Funded</button>
+      <button class="filter-btn" data-filter="soon" onclick="setFilter('soon',this)">Deadline Soon</button>
+      <button class="filter-btn" data-filter="country" onclick="setFilter('country',this)">By Country</button>
+    </div>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input id="search" type="text" placeholder="Search name, country, program..." oninput="render()">
+    </div>
+  </div>
+  <div class="country-bar" id="country-bar"></div>
+</header>
+
+<main>
+  <p class="section-label" id="result-label">All scholarships</p>
+  <div class="cards" id="cards"></div>
+</main>
+
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="m-name">—</div>
+        <div class="modal-sub" id="m-country">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body" id="m-body"></div>
+  </div>
+</div>
+
+<footer>
+  <span>Today: <strong id="today">—</strong></span>
+  <span>Always verify deadlines on the official scholarship website before applying</span>
+</footer>
+
+<script>
+  /* ============================================================
+     SCHOLARSHIP DATA — edit here. Deadlines: YYYY-MM-DD
+     funding: 'full' | 'partial' | 'unknown'
+     status:  'researching' | 'applied' | 'accepted' | 'rejected'
+     ============================================================ */
+  const SCHOLARSHIPS = [
+    {
+      name: 'DAAD Scholarship',
+      country: 'Germany', flag: '🇩🇪',
+      degree: 'Masters',
+      deadline: '2026-10-31',
+      funding: 'full',
+      status: 'researching',
+      amount: '€992 / month + travel + insurance',
+      duration: '12–24 months',
+      link: 'https://www.daad.de/en/',
+      summary: 'DAAD funds international students for Masters study at German universities across all disciplines, with a strong development-focus track.',
+      benefits: ['Monthly stipend €992', 'Health, accident & liability insurance', 'Travel allowance', 'Study & research subsidy', 'Optional German language course'],
+      eligibility: ['Bachelor degree (usually within last 6 years)', 'Min. 2 years work experience for some tracks', 'Language proof (English/German)']
+    },
+    {
+      name: 'Erasmus Mundus Joint Masters',
+      country: 'Europe', flag: '🇪🇺',
+      degree: 'Masters',
+      deadline: '2026-01-15',
+      funding: 'full',
+      status: 'applied',
+      amount: '€1,400 / month + tuition + travel',
+      duration: '24 months (2+ countries)',
+      link: 'https://www.eacea.ec.europa.eu/scholarships/emjmd-catalogue_en',
+      summary: 'Prestigious EU-funded joint Masters programs delivered by consortia of universities across multiple European countries.',
+      benefits: ['Full tuition waiver', 'Monthly living allowance €1,400', 'Travel & installation costs', 'Insurance coverage', 'Study in 2+ countries'],
+      eligibility: ['Bachelor degree', 'Apply directly to specific EMJM program', 'Strong academic record', 'English proficiency']
+    },
+    {
+      name: 'Fulbright Foreign Student',
+      country: 'USA', flag: '🇺🇸',
+      degree: 'Masters',
+      deadline: '2026-05-15',
+      funding: 'full',
+      status: 'researching',
+      amount: 'Tuition + stipend + airfare + insurance',
+      duration: '12–24 months',
+      link: 'https://foreign.fulbrightonline.org/',
+      summary: 'Flagship US government exchange program funding graduate study, administered locally through binational commissions and US embassies.',
+      benefits: ['Full tuition & fees', 'Living stipend', 'Round-trip airfare', 'Health insurance', 'J-1 visa sponsorship'],
+      eligibility: ['Bachelor degree', 'Strong leadership record', 'GRE/TOEFL typically required', 'Apply via home-country commission']
+    },
+    {
+      name: 'Swedish Institute Scholarship (SISGP)',
+      country: 'Sweden', flag: '🇸🇪',
+      degree: 'Masters',
+      deadline: '2026-02-10',
+      funding: 'full',
+      status: 'researching',
+      amount: 'SEK 12,000 / month + tuition + travel',
+      duration: '12–24 months',
+      link: 'https://si.se/en/apply/scholarships/',
+      summary: 'SI Scholarships for Global Professionals fund future leaders for Masters study in Sweden, targeting selected countries.',
+      benefits: ['Full tuition fee', 'Living allowance SEK 12,000/month', 'Travel grant SEK 15,000', 'Insurance', 'SI Network for Future Global Leaders'],
+      eligibility: ['From an eligible country', 'Min. 3,000 hrs work/leadership experience', 'Admitted to eligible Masters program', 'Applied via universityadmissions.se']
+    },
+    {
+      name: 'VLIR-UOS Scholarship',
+      country: 'Belgium', flag: '🇧🇪',
+      degree: 'Masters',
+      deadline: '2026-03-01',
+      funding: 'full',
+      status: 'rejected',
+      amount: 'Tuition + monthly allowance + travel',
+      duration: '12–24 months',
+      link: 'https://www.vliruos.be/en/scholarships/',
+      summary: 'VLIR-UOS funds students from developing countries for selected Masters and training programs at Flemish universities in Belgium.',
+      benefits: ['Full tuition coverage', 'Monthly living allowance', 'International travel', 'Insurance & arrival allowance', 'Development-oriented programs'],
+      eligibility: ['From a VLIR-UOS eligible country', 'Under age limit (varies)', 'Relevant work experience', 'Admitted to an eligible ICP program']
+    }
+  ];
+
+  /* ============================================================ */
+  const DAY = 86400000;
+  const SOON_DAYS = 45;
+  let activeFilter = 'all';
+  let activeCountry = null;
+
+  const fmtDate = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const fundLabel = { full: 'Fully Funded', partial: 'Partial', unknown: 'Unknown' };
+  const statusLabel = { researching: 'Researching', applied: 'Applied', accepted: 'Accepted', rejected: 'Rejected' };
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+  function parseDate(ds) { const [y,m,d] = ds.split('-').map(Number); return Date.UTC(y, m-1, d); }
+  function daysLeft(ds) { return Math.round((parseDate(ds) - startOfToday()) / DAY); }
+  function startOfToday() { const n = new Date(); return Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()); }
+  function prettyDate(ds) { const [y,m,d] = ds.split('-').map(Number); return fmtDate.format(new Date(Date.UTC(y,m-1,d))); }
+
+  function countdownParts(ds) {
+    const n = daysLeft(ds);
+    if (n < 0)   return { txt: 'Closed',   cls: 'days-closed' };
+    if (n === 0) return { txt: 'Today',    cls: 'days-soon' };
+    if (n === 1) return { txt: 'Tomorrow', cls: 'days-soon' };
+    return { txt: n + ' days', cls: n <= SOON_DAYS ? 'days-soon' : 'days-open' };
+  }
+
+  function matchesFilter(s) {
+    if (activeFilter === 'full') return s.funding === 'full';
+    if (activeFilter === 'soon') { const n = daysLeft(s.deadline); return n >= 0 && n <= SOON_DAYS; }
+    if (activeFilter === 'country') return !activeCountry || s.country === activeCountry;
+    return true;
+  }
+  function matchesSearch(s) {
+    const q = document.getElementById('search').value.trim().toLowerCase();
+    if (!q) return true;
+    return (s.name + ' ' + s.country + ' ' + s.degree + ' ' + s.summary).toLowerCase().includes(q);
+  }
+
+  function setFilter(f, btn) {
+    activeFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('country-bar').classList.toggle('show', f === 'country');
+    if (f !== 'country') activeCountry = null;
+    render();
+  }
+  function pickCountry(c, chip) {
+    activeCountry = activeCountry === c ? null : c;
+    document.querySelectorAll('.country-chip').forEach(x => x.classList.remove('active'));
+    if (activeCountry) chip.classList.add('active');
+    render();
+  }
+
+  function buildCountryBar() {
+    const seen = {};
+    const bar = document.getElementById('country-bar');
+    bar.innerHTML = SCHOLARSHIPS.filter(s => !seen[s.country] && (seen[s.country] = 1))
+      .map(s => '<button class="country-chip" onclick="pickCountry(\'' + esc(s.country) + '\',this)">' +
+        s.flag + ' ' + esc(s.country) + '</button>').join('');
+  }
+
+  function cardHTML(s, i) {
+    const cd = countdownParts(s.deadline);
+    const closed = daysLeft(s.deadline) < 0;
+    const soon = !closed && daysLeft(s.deadline) <= SOON_DAYS;
+    return '<div class="card' + (soon ? ' soon' : '') + (closed ? ' closed' : '') + '" onclick="openModal(' + i + ')">' +
+      '<div class="card-top"><div>' +
+        '<div class="sch-name">' + esc(s.name) + '</div>' +
+        '<div class="sch-country"><span class="flag">' + s.flag + '</span>' + esc(s.country) + '</div>' +
+      '</div><span class="fund-tag fund-' + s.funding + '">' + fundLabel[s.funding] + '</span></div>' +
+      '<div class="meta-grid">' +
+        '<div><div class="meta-label">Degree</div><div class="meta-value">' + esc(s.degree) + '</div></div>' +
+        '<div><div class="meta-label">Deadline</div><div class="meta-value">' + prettyDate(s.deadline) + '</div></div>' +
+      '</div>' +
+      '<div class="card-foot">' +
+        '<div class="countdown"><span class="countdown-days ' + cd.cls + '">' + cd.txt + '</span>' +
+          (closed ? '' : '<span class="countdown-lbl">left</span>') + '</div>' +
+        '<span class="status-badge st-' + s.status + '">' + statusLabel[s.status] + '</span>' +
+      '</div></div>';
+  }
+
+  function render() {
+    const list = SCHOLARSHIPS.map((s, i) => ({ s, i }))
+      .filter(o => matchesFilter(o.s) && matchesSearch(o.s))
+      .sort((a, b) => {
+        const ac = daysLeft(a.s.deadline) < 0, bc = daysLeft(b.s.deadline) < 0;
+        if (ac !== bc) return ac ? 1 : -1;
+        return parseDate(a.s.deadline) - parseDate(b.s.deadline);
+      });
+    const box = document.getElementById('cards');
+    box.innerHTML = list.length
+      ? list.map(o => cardHTML(o.s, o.i)).join('')
+      : '<div class="empty"><span>🔍</span>No scholarships match your filters.</div>';
+    document.getElementById('result-label').textContent =
+      list.length + ' ' + (list.length === 1 ? 'scholarship' : 'scholarships') +
+      (activeFilter === 'full' ? ' · fully funded' : activeFilter === 'soon' ? ' · deadline soon' :
+       activeFilter === 'country' && activeCountry ? ' · ' + activeCountry : '');
+  }
+
+  function openModal(i) {
+    const s = SCHOLARSHIPS[i];
+    document.getElementById('m-name').textContent = s.name;
+    document.getElementById('m-country').innerHTML = '<span class="flag">' + s.flag + '</span> ' + esc(s.country) + ' · ' + esc(s.degree);
+    const cd = countdownParts(s.deadline);
+    document.getElementById('m-body').innerHTML =
+      '<div class="modal-badges">' +
+        '<span class="fund-tag fund-' + s.funding + '">' + fundLabel[s.funding] + '</span>' +
+        '<span class="status-badge st-' + s.status + '">' + statusLabel[s.status] + '</span>' +
+      '</div>' +
+      '<div class="detail-grid">' +
+        '<div class="detail-item"><div class="d-label">Deadline</div><div class="d-value">' + prettyDate(s.deadline) + '</div></div>' +
+        '<div class="detail-item"><div class="d-label">Countdown</div><div class="d-value ' + cd.cls + '">' + cd.txt + '</div></div>' +
+        '<div class="detail-item"><div class="d-label">Funding</div><div class="d-value">' + esc(s.amount || fundLabel[s.funding]) + '</div></div>' +
+        '<div class="detail-item"><div class="d-label">Duration</div><div class="d-value">' + esc(s.duration || '—') + '</div></div>' +
+      '</div>' +
+      (s.summary ? '<div class="modal-section"><h4>Overview</h4><p>' + esc(s.summary) + '</p></div>' : '') +
+      (s.benefits && s.benefits.length ? '<div class="modal-section"><h4>Benefits</h4><ul>' + s.benefits.map(b => '<li>' + esc(b) + '</li>').join('') + '</ul></div>' : '') +
+      (s.eligibility && s.eligibility.length ? '<div class="modal-section"><h4>Eligibility</h4><ul>' + s.eligibility.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul></div>' : '') +
+      (s.link ? '<a class="modal-link" href="' + esc(s.link) + '" target="_blank" rel="noopener">Official website ↗</a>' : '');
+    document.getElementById('modal').classList.add('open');
+  }
+  function closeModal() { document.getElementById('modal').classList.remove('open'); }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  // init
+  document.getElementById('total-count').textContent = SCHOLARSHIPS.length;
+  document.getElementById('today').textContent = fmtDate.format(new Date());
+  buildCountryBar();
+  render();
+</script>
+</body>
+</html>
