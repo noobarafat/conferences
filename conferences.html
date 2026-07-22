@@ -227,6 +227,20 @@
   .empty-state { padding: 3rem 3rem; text-align: center; color: var(--muted); font-size: .85rem; }
   .empty-state .es-ico { font-size: 2rem; display: block; margin-bottom: .6rem; opacity: .5; }
 
+  /* ===== PUBLISHED PAPER CARDS (4 per row) ===== */
+  .pub-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding: 1.5rem 3rem 0; }
+  .pub-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.3rem; position: relative; overflow: hidden; display: flex; flex-direction: column; transition: transform .2s, box-shadow .2s, border-color .2s; animation: fadeUp .35s ease both; }
+  .pub-card:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(0,0,0,.45); border-color: rgba(124,92,252,.5); }
+  .pub-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent2), var(--accent)); opacity: 0; transition: opacity .2s; }
+  .pub-card:hover::before { opacity: 1; }
+  .pub-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: .8rem; }
+  .pub-idx { font-family: 'Space Mono', monospace; font-size: .82rem; font-weight: 700; color: var(--accent2); background: rgba(124,92,252,.12); width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .pub-title { font-size: .9rem; font-weight: 600; line-height: 1.4; letter-spacing: -.01em; flex: 1; }
+  .pub-title a { color: var(--text); text-decoration: none; border-bottom: 1px solid rgba(124,92,252,.35); transition: color .2s, border-color .2s; }
+  .pub-title a:hover { color: var(--accent2); border-color: var(--accent2); }
+  .pub-venue { font-size: .72rem; color: var(--muted); margin-top: .7rem; display: flex; align-items: center; gap: .4rem; line-height: 1.4; }
+  .pub-foot { margin-top: auto; padding-top: .9rem; }
+
   /* ===== STATUS PILLS ===== */
   .pill { font-family: 'Space Mono', monospace; font-size: .58rem; letter-spacing: .05em; text-transform: uppercase; padding: .22rem .6rem; border-radius: 20px; white-space: nowrap; }
   .pill-green { background: rgba(46,204,138,.15); color: var(--green); }
@@ -258,9 +272,13 @@
     .dates-grid { grid-template-columns: 1fr; }
     .tab-nav { padding: 0 .75rem; }
     .tab-btn { padding: .85rem .7rem; font-size: .64rem; }
-    .panel-head, .stat-row, .ielts-grid, .entry-list, .exam-hero, .empty-state { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .panel-head, .stat-row, .ielts-grid, .entry-list, .exam-hero, .empty-state, .pub-grid { padding-left: 1.25rem; padding-right: 1.25rem; }
     .exam-hero { margin-left: 1.25rem; margin-right: 1.25rem; }
     .form-grid { grid-template-columns: 1fr; }
+    .pub-grid { grid-template-columns: 1fr; }
+  }
+  @media (min-width: 641px) and (max-width: 1100px) {
+    .pub-grid { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
 </head>
@@ -311,6 +329,11 @@
     </div>
   </div>
   <div class="stat-row" id="research-stats"></div>
+
+  <p class="section-label" style="margin:2rem 3rem 0">Published papers · <span id="pub-count" style="color:var(--accent2)">0</span></p>
+  <div class="pub-grid" id="pub-grid"></div>
+
+  <p class="section-label" style="margin:2.4rem 3rem 0">Submitted &amp; in-progress</p>
   <div class="entry-list" id="research-list"></div>
 
   <p class="section-label" style="margin:2.4rem 3rem 0">Conference deadlines · Bangladesh</p>
@@ -1181,16 +1204,48 @@
 
   const RG_PROFILE = 'https://www.researchgate.net/profile/K-M-Arafat-Islam';
 
-  /* 8 published papers — replace placeholder titles with real ones from ResearchGate */
+  /* 8 published papers. venue = conference/journal (fill real names). */
   const PUBLISHED_PAPERS = [
-    { title: 'Published Paper 1 — replace with real title', venue: 'ResearchGate', year: '' },
-    { title: 'Published Paper 2 — replace with real title', venue: 'ResearchGate', year: '' },
-    { title: 'Published Paper 3 — replace with real title', venue: 'ResearchGate', year: '' },
-    { title: 'Published Paper 4 — replace with real title', venue: 'ResearchGate', year: '' },
-    { title: 'Published Paper 5 — replace with real title', venue: 'ResearchGate', year: '' },
-    { title: 'Published Paper 6 — replace with real title', venue: 'ResearchGate', year: '' },
-    { title: 'Published Paper 7 — replace with real title', venue: 'ResearchGate', year: '' },
-    { title: 'Published Paper 8 — replace with real title', venue: 'ResearchGate', year: '' }
+    {
+      title: 'Early Detection of Mental Health Disorders Among Private University Students in Bangladesh Using Machine Learning-Based Behavioral Data Analysis',
+      venue: '', year: '',
+      link: 'https://www.researchgate.net/publication/406152313_Early_Detection_of_Mental_Health_Disorders_Among_Private_University_Students_in_Bangladesh_Using_Machine_Learning-Based_Behavioral_Data_Analysis'
+    },
+    {
+      title: 'Ensemble Deep Learning for Automated Multiclass Classification of Gastrointestinal Disorders in Endoscopic Images',
+      venue: '', year: '',
+      link: 'https://www.researchgate.net/publication/399458722_Ensemble_Deep_Learning_for_Automated_Multiclass_Classification_of_Gastrointestinal_Disorders_in_Endoscopic_Images'
+    },
+    {
+      title: 'Rank-Based Ensemble Learning for Early Detection of Mental Health Disorders in Private University Students',
+      venue: '', year: '',
+      link: 'https://www.researchgate.net/publication/399458347_Rank-Based_Ensemble_Learning_for_Early_Detection_of_Mental_Health_Disorders_in_Private_University_Students'
+    },
+    {
+      title: 'The Role of Agile Methodology in Enhancing Product Management Efficiency: A Review',
+      venue: '', year: '',
+      link: 'https://www.researchgate.net/publication/404203408_The_Role_of_Agile_Methodology_in_Enhancing_Product_Management_Efficiency_A_Review'
+    },
+    {
+      title: 'DeepCactus: A Transfer Learning-Driven CNN Model for Accurate Identification of Morphologically Overlapping Cactus Breeds',
+      venue: '', year: '',
+      link: 'https://www.researchgate.net/publication/400985669_DeepCactus_A_Transfer_Learning-Driven_CNN_Model_for_Accurate_Identification_of_Morphologically_Overlapping_Cactus_Breeds'
+    },
+    {
+      title: 'Explainable Deep Neural Diagnostics: Vision Transformer-Based Retinal Disease Classification from OCT Images Using Gradient-Driven Visual Attribution',
+      venue: '', year: '',
+      link: 'https://www.researchgate.net/publication/400985568_Explainable_Deep_Neural_Diagnostics_Vision_Transformer-Based_Retinal_Disease_Classification_from_OCT_Images_Using_Gradient-Driven_Visual_Attribution'
+    },
+    {
+      title: 'A Transfer Learning-Based Ensemble Model for Automated Tea Leaf Disease Detection',
+      venue: '', year: '',
+      link: 'https://www.researchgate.net/publication/399863129_A_Transfer_Learning-Based_Ensemble_Model_for_Automated_Tea_Leaf_Disease_Detection'
+    },
+    {
+      title: 'Resource-Efficient Deep Ensembles for Structured Retail Time-Series Forecasting: A Case Study on Walmart Sales',
+      venue: '', year: '',
+      link: 'https://www.researchgate.net/publication/404642084_Resource-Efficient_Deep_Ensembles_for_Structured_Retail_Time-Series_Forecasting_A_Case_Study_on_Walmart_Sales'
+    }
   ];
 
   // virtual papers auto-linked from conference submissions (submitted → under review)
@@ -1203,9 +1258,24 @@
   }
   function publishedLinkedPapers() {
     return PUBLISHED_PAPERS.map(p => ({
-      title: p.title, venue: p.venue || 'ResearchGate', status: 'Published',
-      year: p.year || '', link: RG_PROFILE, source: 'rg'
+      title: p.title, venue: p.venue || '', status: 'Published',
+      year: p.year || '', link: p.link || RG_PROFILE, source: 'rg'
     }));
+  }
+  function renderPublishedCards() {
+    document.getElementById('pub-count').textContent = PUBLISHED_PAPERS.length;
+    document.getElementById('pub-grid').innerHTML = PUBLISHED_PAPERS.map((p, i) => {
+      const link = p.link || RG_PROFILE;
+      return '<div class="pub-card">' +
+        '<div class="pub-top"><span class="pub-idx">' + String(i + 1).padStart(2, '0') + '</span>' +
+        '<span class="pill pill-violet">Published</span></div>' +
+        '<div class="pub-title"><a href="' + esc(link) + '" target="_blank" rel="noopener">' + esc(p.title) + '</a></div>' +
+        '<div class="pub-foot">' +
+        '<div class="pub-venue">🏛️ <span>' + (p.venue ? esc(p.venue) : '<i style="opacity:.6">venue not set</i>') +
+        (p.year ? ' · ' + esc(p.year) : '') + '</span></div>' +
+        '<div class="pub-venue">🔗 <a href="' + esc(link) + '" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:none">View on ResearchGate ↗</a></div>' +
+        '</div></div>';
+    }).join('');
   }
 
   function allPapers() {
@@ -1235,10 +1305,14 @@
       '<div class="stat-tile"><div class="stat-label">' + t.l + '</div>' +
       '<div class="stat-val ' + t.c + '">' + t.v + '</div></div>').join('');
 
+    renderPublishedCards();
+
+    // list = conference-linked + user papers (published shown as cards above)
+    const listRows = list.filter(p => p.source !== 'rg');
     const srcTag = { conf: '<span class="pill pill-blue">🔗 Conference</span>', rg: '<span class="pill pill-violet">🎓 ResearchGate</span>' };
     const el = document.getElementById('research-list');
-    if (!list.length) { el.innerHTML = emptyState('🔬', 'No papers yet. Add your first manuscript.'); return; }
-    el.innerHTML = list.map(p => {
+    if (!listRows.length) { el.innerHTML = emptyState('🔬', 'No submitted papers yet.'); return; }
+    el.innerHTML = listRows.map(p => {
       const locked = p.source !== 'user';
       const actions = locked
         ? (p.link ? '<a class="icon-btn" href="' + esc(p.link) + '" target="_blank" rel="noopener" title="Open">↗</a>' : '')
