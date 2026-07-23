@@ -29,7 +29,7 @@ Google Apps Script web app. No server, works on GitHub Pages / any static host.
 ## 2. Add the Apps Script
 
 1. In the Spreadsheet: **Extensions → Apps Script**.
-2. Delete the sample code, paste the contents of `gsheet/Code.gs`.
+2. Delete the sample code, paste the contents of `backend/Code.gs`.
 3. Change `API_TOKEN` to a long random string. **Copy it.**
 4. Save (disk icon).
 
@@ -44,7 +44,7 @@ Google Apps Script web app. No server, works on GitHub Pages / any static host.
 
 ## 4. Connect the website
 
-Open `sheet-api.js` (project root) and set:
+Open `assets/sheet-api.js` and set:
 
 ```js
 var API_URL   = 'https://script.google.com/macros/s/XXXX/exec';  // step 3 URL

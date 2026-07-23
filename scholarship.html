@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scholarships · Fully Funded Masters</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="sheet-api.js"></script>
+<script src="assets/sheet-api.js"></script>
 <style>
   :root {
     --bg: #0d0f14;
@@ -194,7 +194,7 @@
 <header>
   <div class="header-top">
     <div>
-      <p class="header-label">Funding · Masters · 2026–2027</p>
+      <p class="header-label"><a href="conferences.html" style="color:var(--accent);text-decoration:none">← Education Dashboard</a> · Funding · Masters</p>
       <h1>Scholarship <span>Tracker</span></h1>
       <p class="header-sub">Fully funded Masters scholarships. Click any card for eligibility, benefits and the official application link.</p>
     </div>
@@ -283,7 +283,7 @@
 
      NOTE: This is only fallback/seed data shown before the Google Sheet
      is connected. Once sheet-api.js has a valid API_URL, cards load from
-     the "Scholarships" tab and this array is ignored. See gsheet/SETUP.md.
+     the Sheet tab and this array is ignored. See backend/SETUP.md.
      ============================================================ */
   const SEED = [
     {
@@ -406,7 +406,7 @@
       }
     } else {
       SCHOLARSHIPS = SEED.map(normalize);
-      banner('Google Sheet not connected — showing sample data. See gsheet/SETUP.md.', 'warn');
+      banner('Google Sheet not connected — showing sample data. See backend/SETUP.md.', 'warn');
     }
     document.getElementById('total-count').textContent = SCHOLARSHIPS.length;
     buildCountryBar();
@@ -552,7 +552,7 @@
       return;
     }
     if (!window.SHEET || !SHEET.configured()) {
-      banner('Connect the Google Sheet first (sheet-api.js + gsheet/SETUP.md) to edit.', 'warn');
+      banner('Connect the Google Sheet first (assets/sheet-api.js + backend/SETUP.md) to edit.', 'warn');
       return;
     }
     const t = prompt('Enter admin token (API_TOKEN from Code.gs):');
