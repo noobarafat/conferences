@@ -54,6 +54,13 @@ var API_TOKEN = 'the-long-random-string-from-step-2';
 Reload `scholarship.html`. Cards now come from the Sheet. Click **Admin** →
 enter the token → you can Add / Edit / Delete rows from the page.
 
+## Adding new datasets (e.g. Conferences)
+
+`Code.gs` auto-creates a tab the first time the site writes to it (headers =
+`id` + the record's fields). So on the Conferences page: **Admin → Import seed**
+creates the `Conferences` tab and fills it — no manual Sheet work. Same for any
+future dataset.
+
 ## Updating after code changes
 
 If you edit `Code.gs` later: **Deploy → Manage deployments → edit (pencil) →

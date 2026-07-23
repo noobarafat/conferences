@@ -107,10 +107,24 @@ function findRowById(sh, hs, id) {
   return -1;
 }
 
+// Create the tab (with a header row) if it doesn't exist yet.
+// Headers = "id" first, then the record's own keys. Lets the site add a
+// brand-new dataset (e.g. Conferences) with zero manual Sheet setup.
+function ensureSheet(name, record) {
+  var sh = ss().getSheetByName(name);
+  if (sh) return sh;
+  sh = ss().insertSheet(name);
+  var keys = Object.keys(record || {}).filter(function (k) { return k !== 'id'; });
+  var hs = ['id'].concat(keys);
+  sh.getRange(1, 1, 1, hs.length).setValues([hs]);
+  sh.setFrozenRows(1);
+  return sh;
+}
+
 function createRow(name, record) {
-  var sh = getSheetOrThrow(name);
-  var hs = headers(sh);
   record = record || {};
+  var sh = ensureSheet(name, record);
+  var hs = headers(sh);
   if (hs.indexOf('id') !== -1 && !record.id) {
     record.id = Utilities.getUuid();
   }
