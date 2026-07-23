@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scholarships · Fully Funded Masters</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="sheet-api.js"></script>
 <style>
   :root {
     --bg: #0d0f14;
@@ -137,6 +138,40 @@
   .modal-link { display: inline-flex; align-items: center; gap: .45rem; margin-top: 1.5rem; font-family: 'Space Mono', monospace; font-size: .78rem; padding: .7rem 1.2rem; border-radius: 9px; background: var(--accent); color: #fff; text-decoration: none; transition: all .2s; }
   .modal-link:hover { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 
+  /* ===== ADMIN ===== */
+  .admin-btn { font-family: 'Space Mono', monospace; font-size: .68rem; letter-spacing: .06em; padding: .45rem .95rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all .2s; text-transform: uppercase; white-space: nowrap; }
+  .admin-btn:hover { border-color: var(--green); color: var(--green); }
+  .admin-btn.on { background: var(--green); border-color: var(--green); color: #04120c; }
+  .add-btn { font-family: 'Space Mono', monospace; font-size: .7rem; letter-spacing: .05em; padding: .5rem 1rem; border-radius: 8px; border: 1px dashed var(--accent2); background: transparent; color: var(--accent2); cursor: pointer; text-transform: uppercase; transition: all .2s; }
+  .add-btn:hover { background: rgba(124,92,252,.12); }
+  .add-row { margin-bottom: 1.1rem; display: none; }
+  body.admin .add-row { display: block; }
+  .banner { font-size: .78rem; padding: .7rem 1rem; border-radius: 8px; margin-top: 1rem; display: none; }
+  .banner.show { display: block; }
+  .banner.warn { background: rgba(245,166,35,.12); color: var(--amber); border: 1px solid rgba(245,166,35,.3); }
+  .banner.err  { background: rgba(255,95,95,.12); color: var(--red); border: 1px solid rgba(255,95,95,.3); }
+
+  .card-actions { display: none; gap: .4rem; margin-top: .8rem; padding-top: .8rem; border-top: 1px dashed var(--border); }
+  body.admin .card-actions { display: flex; }
+  .mini-btn { font-family: 'Space Mono', monospace; font-size: .6rem; letter-spacing: .05em; text-transform: uppercase; padding: .3rem .6rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all .2s; }
+  .mini-btn.edit:hover { border-color: var(--accent); color: var(--accent); }
+  .mini-btn.del:hover  { border-color: var(--red); color: var(--red); }
+
+  /* edit form */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .field { display: flex; flex-direction: column; gap: .3rem; }
+  .field.full { grid-column: 1 / -1; }
+  .field label { font-size: .6rem; font-family: 'Space Mono', monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .field input, .field select, .field textarea { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: .55rem .7rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: .85rem; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); }
+  .field textarea { resize: vertical; min-height: 70px; }
+  .field .hint { font-size: .62rem; color: var(--muted); }
+  .form-actions { display: flex; gap: .6rem; justify-content: flex-end; margin-top: 1.4rem; }
+  .btn-save { font-family: 'Space Mono', monospace; font-size: .78rem; padding: .65rem 1.3rem; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .btn-save:hover { background: var(--accent2); }
+  .btn-cancel { font-family: 'Space Mono', monospace; font-size: .78rem; padding: .65rem 1.3rem; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; }
+  .btn-save:disabled { opacity: .5; cursor: default; }
+
   @keyframes fadeIn { from{opacity:0} to{opacity:1} }
   @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
   .card:nth-child(1){animation-delay:.03s} .card:nth-child(2){animation-delay:.07s}
@@ -177,14 +212,50 @@
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
       <input id="search" type="text" placeholder="Search name, country, program..." oninput="render()">
     </div>
+    <button class="admin-btn" id="admin-btn" onclick="toggleAdmin()">Admin</button>
   </div>
   <div class="country-bar" id="country-bar"></div>
+  <div class="banner" id="banner"></div>
 </header>
 
 <main>
+  <div class="add-row"><button class="add-btn" onclick="openEdit(null)">+ Add scholarship</button></div>
   <p class="section-label" id="result-label">All scholarships</p>
   <div class="cards" id="cards"></div>
 </main>
+
+<!-- edit / add modal -->
+<div class="modal-overlay" id="edit-modal" onclick="if(event.target===this)closeEdit()">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div><div class="modal-title" id="edit-title">Add scholarship</div></div>
+      <button class="modal-close" onclick="closeEdit()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="edit-form" onsubmit="return saveEdit(event)">
+        <div class="form-grid">
+          <div class="field full"><label>Name</label><input name="name" required></div>
+          <div class="field"><label>Country</label><input name="country"></div>
+          <div class="field"><label>Flag (emoji)</label><input name="flag" placeholder="🇩🇪"></div>
+          <div class="field"><label>Degree</label><input name="degree" value="Masters"></div>
+          <div class="field"><label>Deadline (YYYY-MM-DD)</label><input name="deadline" placeholder="2026-10-31"></div>
+          <div class="field"><label>Funding</label><select name="funding"><option value="full">Fully Funded</option><option value="partial">Partial</option><option value="unknown">Unknown</option></select></div>
+          <div class="field"><label>Status</label><select name="status"><option value="researching">Researching</option><option value="applied">Applied</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option></select></div>
+          <div class="field"><label>Amount</label><input name="amount"></div>
+          <div class="field"><label>Duration</label><input name="duration"></div>
+          <div class="field full"><label>Official link</label><input name="link" placeholder="https://..."></div>
+          <div class="field full"><label>Summary</label><textarea name="summary"></textarea></div>
+          <div class="field full"><label>Benefits</label><textarea name="benefits" placeholder="One per line"></textarea><span class="hint">One item per line</span></div>
+          <div class="field full"><label>Eligibility</label><textarea name="eligibility" placeholder="One per line"></textarea><span class="hint">One item per line</span></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" onclick="closeEdit()">Cancel</button>
+          <button type="submit" class="btn-save" id="save-btn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
   <div class="modal" role="dialog" aria-modal="true">
@@ -209,8 +280,12 @@
      SCHOLARSHIP DATA — edit here. Deadlines: YYYY-MM-DD
      funding: 'full' | 'partial' | 'unknown'
      status:  'researching' | 'applied' | 'accepted' | 'rejected'
+
+     NOTE: This is only fallback/seed data shown before the Google Sheet
+     is connected. Once sheet-api.js has a valid API_URL, cards load from
+     the "Scholarships" tab and this array is ignored. See gsheet/SETUP.md.
      ============================================================ */
-  const SCHOLARSHIPS = [
+  const SEED = [
     {
       name: 'DAAD Scholarship',
       country: 'Germany', flag: '🇩🇪',
@@ -286,8 +361,57 @@
   /* ============================================================ */
   const DAY = 86400000;
   const SOON_DAYS = 45;
+  const SHEET_TAB = 'Untitled';   // tab name in the Google Sheet (rename tab -> update this)
   let activeFilter = 'all';
   let activeCountry = null;
+  let SCHOLARSHIPS = [];   // live data (from Sheet or seed)
+  let ADMIN = false;
+  let editingId = null;
+
+  const listFields = { benefits: 1, eligibility: 1 };
+
+  // Normalize a raw record (from Sheet or seed) into the shape the UI expects.
+  function normalize(r, idx) {
+    const o = Object.assign({}, r);
+    o.id = (r.id !== undefined && r.id !== '') ? String(r.id) : ('seed-' + idx);
+    ['benefits', 'eligibility'].forEach(k => {
+      if (Array.isArray(o[k])) return;
+      const raw = o[k] == null ? '' : String(o[k]);
+      o[k] = raw.split(/\s*\|\s*|\r?\n/).map(s => s.trim()).filter(Boolean);
+    });
+    o.funding = (o.funding || 'unknown').toString().toLowerCase();
+    o.status  = (o.status  || 'researching').toString().toLowerCase();
+    o.deadline = (o.deadline || '').toString().slice(0, 10);
+    o.flag = o.flag || '🎓';
+    o.degree = o.degree || 'Masters';
+    return o;
+  }
+
+  function banner(msg, kind) {
+    const b = document.getElementById('banner');
+    if (!msg) { b.className = 'banner'; return; }
+    b.className = 'banner show ' + (kind || 'warn');
+    b.textContent = msg;
+  }
+
+  async function loadData() {
+    if (window.SHEET && SHEET.configured()) {
+      try {
+        const rows = await SHEET.get(SHEET_TAB);
+        SCHOLARSHIPS = rows.map(normalize);
+        banner('');
+      } catch (err) {
+        SCHOLARSHIPS = SEED.map(normalize);
+        banner('Sheet load failed (' + err.message + '). Showing seed data.', 'err');
+      }
+    } else {
+      SCHOLARSHIPS = SEED.map(normalize);
+      banner('Google Sheet not connected — showing sample data. See gsheet/SETUP.md.', 'warn');
+    }
+    document.getElementById('total-count').textContent = SCHOLARSHIPS.length;
+    buildCountryBar();
+    render();
+  }
 
   const fmtDate = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   const fundLabel = { full: 'Fully Funded', partial: 'Partial', unknown: 'Unknown' };
@@ -296,12 +420,14 @@
   function esc(s) {
     return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
+  function validDate(ds) { return /^\d{4}-\d{2}-\d{2}$/.test(ds || ''); }
   function parseDate(ds) { const [y,m,d] = ds.split('-').map(Number); return Date.UTC(y, m-1, d); }
-  function daysLeft(ds) { return Math.round((parseDate(ds) - startOfToday()) / DAY); }
+  function daysLeft(ds) { if (!validDate(ds)) return Infinity; return Math.round((parseDate(ds) - startOfToday()) / DAY); }
   function startOfToday() { const n = new Date(); return Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()); }
-  function prettyDate(ds) { const [y,m,d] = ds.split('-').map(Number); return fmtDate.format(new Date(Date.UTC(y,m-1,d))); }
+  function prettyDate(ds) { if (!validDate(ds)) return '—'; const [y,m,d] = ds.split('-').map(Number); return fmtDate.format(new Date(Date.UTC(y,m-1,d))); }
 
   function countdownParts(ds) {
+    if (!validDate(ds)) return { txt: 'No date', cls: 'days-open' };
     const n = daysLeft(ds);
     if (n < 0)   return { txt: 'Closed',   cls: 'days-closed' };
     if (n === 0) return { txt: 'Today',    cls: 'days-soon' };
@@ -360,7 +486,11 @@
       '<div class="card-foot">' +
         '<div class="countdown"><span class="countdown-days ' + cd.cls + '">' + cd.txt + '</span>' +
           (closed ? '' : '<span class="countdown-lbl">left</span>') + '</div>' +
-        '<span class="status-badge st-' + s.status + '">' + statusLabel[s.status] + '</span>' +
+        '<span class="status-badge st-' + s.status + '">' + (statusLabel[s.status] || s.status) + '</span>' +
+      '</div>' +
+      '<div class="card-actions">' +
+        '<button class="mini-btn edit" onclick="event.stopPropagation();openEdit(\'' + s.id + '\')">Edit</button>' +
+        '<button class="mini-btn del" onclick="event.stopPropagation();deleteScholarship(\'' + s.id + '\')">Delete</button>' +
       '</div></div>';
   }
 
@@ -401,17 +531,103 @@
       (s.summary ? '<div class="modal-section"><h4>Overview</h4><p>' + esc(s.summary) + '</p></div>' : '') +
       (s.benefits && s.benefits.length ? '<div class="modal-section"><h4>Benefits</h4><ul>' + s.benefits.map(b => '<li>' + esc(b) + '</li>').join('') + '</ul></div>' : '') +
       (s.eligibility && s.eligibility.length ? '<div class="modal-section"><h4>Eligibility</h4><ul>' + s.eligibility.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul></div>' : '') +
-      (s.link ? '<a class="modal-link" href="' + esc(s.link) + '" target="_blank" rel="noopener">Official website ↗</a>' : '');
+      (s.link ? '<a class="modal-link" href="' + esc(s.link) + '" target="_blank" rel="noopener">Official website ↗</a>' : '') +
+      (ADMIN ? '<a class="modal-link" style="background:var(--surface2);color:var(--accent);margin-left:.6rem" href="javascript:void(0)" onclick="closeModal();openEdit(\'' + s.id + '\')">Edit ✎</a>' : '');
     document.getElementById('modal').classList.add('open');
   }
   function closeModal() { document.getElementById('modal').classList.remove('open'); }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeEdit(); } });
+
+  /* ===== ADMIN / CRUD ===== */
+  function byId(id) { return SCHOLARSHIPS.find(x => String(x.id) === String(id)); }
+
+  function toggleAdmin() {
+    const btn = document.getElementById('admin-btn');
+    if (ADMIN) {
+      ADMIN = false;
+      if (window.SHEET) SHEET.setToken(null);
+      document.body.classList.remove('admin');
+      btn.classList.remove('on'); btn.textContent = 'Admin';
+      banner('');
+      return;
+    }
+    if (!window.SHEET || !SHEET.configured()) {
+      banner('Connect the Google Sheet first (sheet-api.js + gsheet/SETUP.md) to edit.', 'warn');
+      return;
+    }
+    const t = prompt('Enter admin token (API_TOKEN from Code.gs):');
+    if (!t) return;
+    SHEET.setToken(t.trim());
+    ADMIN = true;
+    document.body.classList.add('admin');
+    btn.classList.add('on'); btn.textContent = 'Admin ✓';
+    banner('Admin mode on. Add / Edit / Delete enabled.', 'warn');
+    render();
+  }
+
+  function openEdit(id) {
+    editingId = id;
+    const f = document.getElementById('edit-form');
+    f.reset();
+    document.getElementById('edit-title').textContent = id ? 'Edit scholarship' : 'Add scholarship';
+    if (id) {
+      const s = byId(id);
+      ['name','country','flag','degree','deadline','funding','status','amount','duration','link','summary'].forEach(k => {
+        if (f.elements[k]) f.elements[k].value = s[k] || '';
+      });
+      f.elements.benefits.value = (s.benefits || []).join('\n');
+      f.elements.eligibility.value = (s.eligibility || []).join('\n');
+    }
+    document.getElementById('edit-modal').classList.add('open');
+  }
+  function closeEdit() { document.getElementById('edit-modal').classList.remove('open'); editingId = null; }
+
+  function linesToPipe(v) {
+    return v.split(/\r?\n/).map(s => s.trim()).filter(Boolean).join(' | ');
+  }
+
+  async function saveEdit(ev) {
+    ev.preventDefault();
+    const f = document.getElementById('edit-form');
+    const btn = document.getElementById('save-btn');
+    const rec = {};
+    ['name','country','flag','degree','deadline','funding','status','amount','duration','link','summary'].forEach(k => {
+      rec[k] = (f.elements[k].value || '').trim();
+    });
+    rec.benefits = linesToPipe(f.elements.benefits.value);
+    rec.eligibility = linesToPipe(f.elements.eligibility.value);
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      if (editingId) {
+        rec.id = editingId;
+        await SHEET.update(SHEET_TAB, rec);
+      } else {
+        await SHEET.create(SHEET_TAB, rec);
+      }
+      closeEdit();
+      await loadData();
+    } catch (err) {
+      banner('Save failed: ' + err.message, 'err');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Save';
+    }
+    return false;
+  }
+
+  async function deleteScholarship(id) {
+    const s = byId(id);
+    if (!confirm('Delete "' + (s ? s.name : id) + '"? This removes the row from the Sheet.')) return;
+    try {
+      await SHEET.remove(SHEET_TAB, id);
+      await loadData();
+    } catch (err) {
+      banner('Delete failed: ' + err.message, 'err');
+    }
+  }
 
   // init
-  document.getElementById('total-count').textContent = SCHOLARSHIPS.length;
   document.getElementById('today').textContent = fmtDate.format(new Date());
-  buildCountryBar();
-  render();
+  loadData();
 </script>
 </body>
 </html>
