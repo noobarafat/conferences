@@ -965,6 +965,7 @@
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     localStorage.setItem('edu_activeTab', tab);
+    try { history.replaceState(null, '', '#tab=' + encodeURIComponent(tab)); } catch (e) { location.hash = 'tab=' + encodeURIComponent(tab); }
     if (tab === 'overview') renderOverview();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -1257,7 +1258,7 @@
         '<div class="pub-foot">' +
         '<div class="pub-venue">🏛️ <span>' + (p.venue ? esc(p.venue) : '<i style="opacity:.6">venue not set</i>') +
         (p.year ? ' · ' + esc(p.year) : '') + '</span></div>' +
-        '<div class="pub-venue">🔗 <a href="' + esc(link) + '" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:none">View on ResearchGate ↗</a></div>' +
+        '<div class="pub-venue">🔗 <a href="' + esc(link) + '" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:none">View source ↗</a></div>' +
         '</div></div>';
     }).join('');
   }
@@ -1447,11 +1448,23 @@
   renderResearch();
   renderOverview();
   (function restoreTab() {
-    const t = localStorage.getItem('edu_activeTab');
+    // prefer URL hash (e.g. #tab=research) then fall back to localStorage
+    let t = null;
+    if (location.hash && location.hash.indexOf('tab=') !== -1) {
+      try { t = decodeURIComponent(location.hash.split('tab=')[1]); } catch (e) { t = location.hash.split('tab=')[1]; }
+    }
+    if (!t) t = localStorage.getItem('edu_activeTab');
     if (t && document.getElementById('panel-' + t)) {
       const btn = document.querySelector('.tab-btn[data-tab="' + t + '"]');
       if (btn) switchTab(t, btn);
     }
+    window.addEventListener('hashchange', () => {
+      if (location.hash && location.hash.indexOf('tab=') !== -1) {
+        const nt = decodeURIComponent(location.hash.split('tab=')[1]);
+        const btn = document.querySelector('.tab-btn[data-tab="' + nt + '"]');
+        if (btn) switchTab(nt, btn);
+      }
+    });
   })();
 </script>
 </body>
