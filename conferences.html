@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="assets/sheet-api.js"></script>
 <script src="assets/erasmus-data.js"></script>
+<script src="assets/country-data.js"></script>
 <style>
   :root {
     --bg: #0d0f14;
@@ -221,6 +222,78 @@
   .pending-doc-item:hover { background: var(--surface2); color: var(--text); }
   .pending-doc-item input[type=checkbox] { margin-top: .2rem; accent-color: var(--accent); width: 14px; height: 14px; flex-shrink: 0; cursor: pointer; }
   .doc-all-done { font-size: .78rem; color: var(--green); margin-top: .7rem; padding-top: .7rem; border-top: 1px dashed var(--border); }
+
+  /* ===== SCHOLARSHIPS / COUNTRY (in-page, no navigation) ===== */
+  .prog-grid, .ctry-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin: 0 3rem; }
+  .prog-card, .ctry-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.4rem 1.5rem; cursor: pointer; transition: transform .2s, box-shadow .2s, border-color .2s; }
+  .prog-card:hover, .ctry-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,.5); border-color: #353c55; }
+  .prog-top { display: flex; justify-content: space-between; align-items: flex-start; gap: .6rem; margin-bottom: .9rem; }
+  .prog-name { font-size: 1.05rem; font-weight: 600; letter-spacing: -.01em; }
+  .prog-tier { font-size: .74rem; color: var(--muted); margin-top: .3rem; }
+  .prog-loc { font-size: .78rem; color: var(--muted); margin-top: .35rem; }
+  .prog-about-line { font-size: .78rem; color: var(--muted); line-height: 1.55; margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .doc-progress { font-size: .68rem; font-family: 'Space Mono', monospace; color: var(--muted); margin-bottom: .9rem; }
+  .doc-progress.done { color: var(--green); }
+  .doc-progress-track { height: 4px; background: var(--surface2); border-radius: 3px; margin-top: .3rem; overflow: hidden; }
+  .doc-progress-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+  .doc-progress.done .doc-progress-fill { background: var(--green); }
+  .fund-tag { font-family: 'Space Mono', monospace; font-size: .56rem; letter-spacing: .05em; text-transform: uppercase; padding: .28rem .6rem; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .fund-full { background: rgba(46,204,138,.15); color: var(--green); }
+  .fund-partial { background: rgba(245,166,35,.15); color: var(--amber); }
+  .status-badge { font-family: 'Space Mono', monospace; font-size: .58rem; letter-spacing: .05em; text-transform: uppercase; padding: .28rem .65rem; border-radius: 20px; white-space: nowrap; display: inline-flex; align-items: center; gap: .35rem; }
+  .status-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .st-researching { background: rgba(79,141,255,.15); color: var(--accent); }
+  .st-applied { background: rgba(245,166,35,.15); color: var(--amber); }
+  .st-accepted { background: rgba(46,204,138,.15); color: var(--green); }
+  .st-rejected { background: rgba(255,95,95,.15); color: var(--red); }
+  .prog-foot { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding-top: .95rem; border-top: 1px solid var(--border); }
+  .prog-arrow { color: var(--muted); font-size: .85rem; }
+  .ctry-icon { font-size: 2rem; margin-bottom: .8rem; }
+  .ctry-stats { display: flex; gap: 1.2rem; margin-top: .6rem; }
+  .ctry-stat b { display: block; font-family: 'Space Mono', monospace; font-size: 1rem; color: var(--accent); }
+  .ctry-stat span { font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+
+  .prog-detail, .ctry-detail { margin: 0 3rem; }
+  .prog-back { font-family: 'Space Mono', monospace; font-size: .72rem; color: var(--accent); background: none; border: none; cursor: pointer; margin-bottom: 1.2rem; padding: 0; }
+  .prog-back:hover { text-decoration: underline; }
+  .prog-detail-head { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.2rem; }
+  .prog-detail-head h3 { font-size: 1.5rem; font-weight: 600; }
+  .prog-detail-sub { font-size: .86rem; color: var(--muted); margin-top: .4rem; }
+  .prog-badges-row { display: flex; align-items: center; gap: .6rem; margin-bottom: 1.4rem; }
+  select.prog-status-select { font-family: 'Space Mono', monospace; font-size: .68rem; letter-spacing: .04em; text-transform: uppercase; padding: .35rem .65rem; border-radius: 20px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; }
+  .prog-info-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 1rem 1.3rem; margin-bottom: 1.6rem; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.4rem; }
+  .prog-d-label { font-size: .6rem; font-family: 'Space Mono', monospace; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: .25rem; }
+  .prog-d-value { font-size: .88rem; font-weight: 500; line-height: 1.4; }
+  .prog-section { margin-bottom: 1.6rem; }
+  .prog-section h4 { font-family: 'Space Mono', monospace; font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: .55rem; }
+  .prog-section p { font-size: .88rem; line-height: 1.6; }
+  .prog-section ul { list-style: none; }
+  .prog-section li { font-size: .85rem; line-height: 1.5; padding: .3rem 0 .3rem 1.2rem; position: relative; }
+  .prog-section li::before { content: '▸'; position: absolute; left: 0; color: var(--accent2); }
+  .prog-about { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 10px; padding: 1rem 1.2rem; }
+  .prog-links-row { display: flex; gap: .55rem; flex-wrap: wrap; }
+  .prog-link-btn { display: inline-flex; align-items: center; gap: .4rem; font-family: 'Space Mono', monospace; font-size: .72rem; padding: .55rem 1rem; border-radius: 9px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); text-decoration: none; }
+  .prog-link-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .prog-link-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .prog-link-btn.primary:hover { background: transparent; color: var(--accent); }
+
+  .chk-progress-line { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .chk-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; margin: 0 1rem; overflow: hidden; }
+  .chk-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .2s; }
+  .chk-progress-line.done .chk-fill { background: var(--green); }
+  .chk-count { font-family: 'Space Mono', monospace; font-size: .78rem; color: var(--muted); white-space: nowrap; }
+  .chk-list { display: flex; flex-direction: column; gap: .1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: .6rem; }
+  .chk-item { display: flex; align-items: flex-start; gap: .6rem; padding: .55rem .6rem; border-radius: 8px; cursor: pointer; font-size: .85rem; line-height: 1.45; transition: background .15s; }
+  .chk-item:hover { background: var(--surface2); }
+  .chk-item input[type=checkbox] { margin-top: .2rem; accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+  .chk-item.checked span { color: var(--muted); text-decoration: line-through; }
+
+  .uni-mini-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1.3rem; margin-bottom: .8rem; }
+  .uni-mini-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .uni-mini-name { font-size: .96rem; font-weight: 600; }
+  .uni-mini-details { font-size: .84rem; color: var(--text); margin-top: .45rem; line-height: 1.55; white-space: pre-wrap; }
+  .uni-mini-link { font-size: .76rem; color: var(--accent); text-decoration: none; margin-top: .45rem; display: inline-block; }
+  .uni-actions { display: flex; gap: .4rem; flex-shrink: 0; }
   .entry-notes { font-size: .78rem; color: var(--muted); margin-top: .7rem; padding-top: .7rem; border-top: 1px dashed var(--border); line-height: 1.55; }
   .entry-actions { display: flex; gap: .4rem; flex-shrink: 0; }
   .icon-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); width: 30px; height: 30px; border-radius: 7px; cursor: pointer; font-size: .82rem; transition: all .2s; display: flex; align-items: center; justify-content: center; text-decoration: none; }
@@ -308,8 +381,8 @@
 <nav class="tab-nav" id="tab-nav">
   <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview',this)"><span class="tab-ico">📊</span>Overview</button>
   <button class="tab-btn" data-tab="uni" onclick="switchTab('uni',this)"><span class="tab-ico">🏛️</span>Universities</button>
-  <a class="tab-btn" href="country.html" style="text-decoration:none"><span class="tab-ico">🌍</span>Country&nbsp;↗</a>
-  <a class="tab-btn" href="scholarship.html" style="text-decoration:none"><span class="tab-ico">🎓</span>Scholarships&nbsp;↗</a>
+  <button class="tab-btn" data-tab="country" onclick="switchTab('country',this)"><span class="tab-ico">🌍</span>Country</button>
+  <button class="tab-btn" data-tab="scholarships" onclick="switchTab('scholarships',this)"><span class="tab-ico">🎓</span>Scholarships</button>
   <button class="tab-btn" data-tab="docs" onclick="switchTab('docs',this)"><span class="tab-ico">📁</span>Documents</button>
   <button class="tab-btn" data-tab="research" onclick="switchTab('research',this)"><span class="tab-ico">🔬</span>Research</button>
 </nav>
@@ -391,6 +464,30 @@
   <div style="height:2.5rem"></div>
 </section>
 
+<!-- ============ TAB: COUNTRY ============ -->
+<section class="tab-panel" id="panel-country">
+  <div class="panel-head">
+    <div>
+      <h2>Target <span>Countries</span></h2>
+      <p>Countries I'm applying to — required documents and target universities, tracked per country.</p>
+    </div>
+  </div>
+  <div id="country-view"></div>
+  <div style="height:2.5rem"></div>
+</section>
+
+<!-- ============ TAB: SCHOLARSHIPS ============ -->
+<section class="tab-panel" id="panel-scholarships">
+  <div class="panel-head">
+    <div>
+      <h2>Erasmus <span>Mundus</span></h2>
+      <p>7 shortlisted joint-Masters programmes — full profile, eligibility, official links and document checklist.</p>
+    </div>
+  </div>
+  <div id="scholarships-view"></div>
+  <div style="height:2.5rem"></div>
+</section>
+
 <!-- ============ TAB: DOCUMENTS ============ -->
 <section class="tab-panel" id="panel-docs">
   <div class="panel-head">
@@ -412,6 +509,9 @@
 
   <p class="section-label" style="margin:2.2rem 3rem 0">Erasmus programme documents · what's left, per programme</p>
   <div class="entry-list" id="erasmus-docs-list"></div>
+
+  <p class="section-label" style="margin:2.2rem 3rem 0">Country documents · what's left, per country</p>
+  <div class="entry-list" id="country-docs-list"></div>
 
   <p class="section-label" style="margin:2.2rem 3rem 0">Other documents</p>
   <div class="entry-list" id="docs-list"></div>
@@ -813,6 +913,8 @@
     localStorage.setItem('edu_activeTab', tab);
     try { history.replaceState(null, '', '#tab=' + encodeURIComponent(tab)); } catch (e) { location.hash = 'tab=' + encodeURIComponent(tab); }
     if (tab === 'overview') renderOverview();
+    if (tab === 'scholarships') { scholarshipView = { mode: 'grid', id: null }; renderScholarshipsPanel(); }
+    if (tab === 'country') { countryView = { mode: 'grid', id: null }; renderCountryPanel(); }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -895,6 +997,235 @@
       onSave: f => { Object.assign(u, f); save('edu_uni', l); renderUni(); } });
   }
 
+  // ======================= SCHOLARSHIPS (Erasmus, in-page) =======================
+  const PROG_FUND_LABEL = { full: 'Fully Funded', partial: 'Partial' };
+  const PROG_STATUS_LABEL = { researching: 'Researching', applied: 'Applied', accepted: 'Accepted', rejected: 'Rejected' };
+  const PROG_LINK_LABEL = { official: 'Official website', apply: 'Apply', requirements: 'Admission requirements', faq: 'FAQ', computingStream: 'Computing stream', admission: 'Admission' };
+  let scholarshipView = { mode: 'grid', id: null };
+
+  function progCardHTML(p) {
+    const pr = docsProgress(p);
+    const status = p._status || 'researching';
+    return '<div class="prog-card" onclick="openScholarshipDetail(\'' + p.id + '\')">' +
+      '<div class="prog-top"><div>' +
+        '<div class="prog-name">' + esc(p.shortName) + '</div>' +
+        '<div class="prog-tier">' + esc(p.priorityTier) + '</div>' +
+        '<div class="prog-loc">' + p.flag + ' ' + esc(p.country) + ' · ' + esc(p.duration) + '</div>' +
+      '</div><span class="fund-tag fund-' + p.funding + '">' + PROG_FUND_LABEL[p.funding] + '</span></div>' +
+      (p.about ? '<div class="prog-about-line">' + esc(p.about) + '</div>' : '') +
+      '<div class="doc-progress' + (pr.done === pr.total ? ' done' : '') + '">📋 Documents ' + pr.done + '/' + pr.total +
+        '<div class="doc-progress-track"><div class="doc-progress-fill" style="width:' + Math.round(pr.done / pr.total * 100) + '%"></div></div></div>' +
+      '<div class="prog-foot">' +
+        '<span class="status-badge st-' + status + '">' + PROG_STATUS_LABEL[status] + '</span>' +
+        '<span class="prog-arrow">Details →</span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderScholarshipsPanel() {
+    const box = document.getElementById('scholarships-view');
+    if (!box || typeof ERASMUS_PROGRAMS === 'undefined') return;
+    if (scholarshipView.mode === 'detail') { renderScholarshipDetail(scholarshipView.id); return; }
+    box.innerHTML = '<div class="prog-grid">' + ERASMUS_PROGRAMS.map(progCardHTML).join('') + '</div>';
+  }
+  function openScholarshipDetail(id) { scholarshipView = { mode: 'detail', id }; renderScholarshipsPanel(); }
+  function backToScholarships() { scholarshipView = { mode: 'grid', id: null }; renderScholarshipsPanel(); }
+
+  function renderScholarshipDetail(id) {
+    const box = document.getElementById('scholarships-view');
+    const p = programById(id);
+    if (!p) { box.innerHTML = emptyState('🎓', 'Programme not found.'); return; }
+    const pr = docsProgress(p);
+    const pct = Math.round(pr.done / pr.total * 100);
+    const status = p._status || 'researching';
+    box.innerHTML = '<div class="prog-detail">' +
+      '<button class="prog-back" onclick="backToScholarships()">← Erasmus Mundus</button>' +
+      '<div class="prog-detail-head"><div>' +
+        '<h3>' + esc(p.shortName) + '</h3>' +
+        '<div class="prog-detail-sub">' + esc(p.name) + '</div>' +
+      '</div></div>' +
+      '<div class="prog-badges-row">' +
+        '<span class="fund-tag fund-' + p.funding + '">' + PROG_FUND_LABEL[p.funding] + '</span>' +
+        '<select class="prog-status-select" id="prog-status-select"></select>' +
+      '</div>' +
+      (p.about ? '<div class="prog-section prog-about"><h4>About This Programme</h4><p>' + esc(p.about) + '</p></div>' : '') +
+      '<div class="prog-info-grid">' +
+        '<div><div class="prog-d-label">Coordinator</div><div class="prog-d-value">' + esc(p.coordinator) + '</div></div>' +
+        '<div><div class="prog-d-label">Duration</div><div class="prog-d-value">' + esc(p.duration) + '</div></div>' +
+        '<div><div class="prog-d-label">Track for me</div><div class="prog-d-value">' + esc(p.trackForMe) + '</div></div>' +
+        '<div><div class="prog-d-label">Funding</div><div class="prog-d-value">' + esc(p.amount) + '</div></div>' +
+      '</div>' +
+      '<div class="prog-section"><h4>Universities</h4><ul>' + p.universities.map(u => '<li>' + esc(u) + '</li>').join('') + '</ul></div>' +
+      '<div class="prog-section"><h4>Deadline</h4><p>' + esc(p.deadlineNote) + '</p></div>' +
+      '<div class="prog-section"><h4>Eligibility</h4><ul>' + p.eligibility.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul></div>' +
+      '<div class="prog-section"><h4>Motivation</h4><p>' + esc(p.motivation.type) + ' — ' + esc(p.motivation.spec) + '</p></div>' +
+      '<div class="prog-section"><h4>Recommendation Letters</h4><p>' + (p.recommendationLetters.count ? p.recommendationLetters.count + ' — ' : '') + esc(p.recommendationLetters.type) + '</p></div>' +
+      (p.video.required ? '<div class="prog-section"><h4>Video</h4><p>' + esc(p.video.spec) + '</p></div>' : '') +
+      (p.selection ? '<div class="prog-section"><h4>Selection Process</h4><p>' + esc(p.selection) + '</p></div>' : '') +
+      '<div class="prog-section"><h4>Fit Note</h4><p>' + esc(p.fitNote) + '</p></div>' +
+      '<div class="prog-section"><h4>Official Links</h4><div class="prog-links-row">' +
+        Object.keys(p.links).map((k, i) => '<a class="prog-link-btn' + (i === 0 ? ' primary' : '') + '" href="' + esc(p.links[k]) + '" target="_blank" rel="noopener">' + (PROG_LINK_LABEL[k] || k) + ' ↗</a>').join('') +
+      '</div></div>' +
+      '<div class="prog-section"><h4>Documents Checklist · ' + pr.done + '/' + pr.total + '</h4>' +
+        '<div class="chk-progress-line' + (pr.done === pr.total ? ' done' : '') + '">' +
+          '<span class="chk-count">' + pct + '%</span>' +
+          '<div class="chk-track"><div class="chk-fill" style="width:' + pct + '%"></div></div>' +
+        '</div>' +
+        '<div class="chk-list">' + p.documents.map((d, idx) =>
+          '<label class="chk-item' + (pr.checks[idx] ? ' checked' : '') + '">' +
+            '<input type="checkbox" ' + (pr.checks[idx] ? 'checked' : '') + ' data-chk-idx="' + idx + '">' +
+            '<span>' + esc(d) + '</span>' +
+          '</label>'
+        ).join('') + '</div></div>' +
+    '</div>';
+
+    const sel = document.getElementById('prog-status-select');
+    sel.innerHTML = Object.keys(PROG_STATUS_LABEL).map(k => '<option value="' + k + '"' + (k === status ? ' selected' : '') + '>' + PROG_STATUS_LABEL[k] + '</option>').join('');
+    sel.addEventListener('change', ev => onScholarshipStatusChange(p, ev.target.value));
+    box.querySelectorAll('[data-chk-idx]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        toggleDocCheck(p.id, parseInt(cb.dataset.chkIdx, 10));
+        renderScholarshipDetail(id);
+        renderErasmusDocs();
+        renderCountryDocsPending();
+        renderDocs();
+      });
+    });
+  }
+
+  async function onScholarshipStatusChange(p, newStatus) {
+    p._status = newStatus;
+    if (!(window.SHEET && SHEET.configured())) return;
+    try {
+      await SHEET.update('Untitled', {
+        id: p.sheetId, name: p.label, country: p.country, flag: p.flag, degree: p.degree,
+        deadline: '', funding: p.funding, status: newStatus, amount: p.amount, duration: p.duration,
+        link: p.links.official, summary: p.fitNote, benefits: p.documents.join(' | '),
+        eligibility: p.eligibility.join(' | ')
+      });
+    } catch (e) { /* status still reflected locally even if the write fails */ }
+  }
+
+  (async function loadScholarshipStatuses() {
+    if (!(window.SHEET && SHEET.configured()) || typeof ERASMUS_PROGRAMS === 'undefined') return;
+    try {
+      const rows = await SHEET.get('Untitled');
+      const byId = {};
+      rows.forEach(r => { byId[r.id] = r.status; });
+      ERASMUS_PROGRAMS.forEach(p => { const st = (byId[p.sheetId] || '').toLowerCase(); if (st) p._status = st; });
+      renderScholarshipsPanel();
+    } catch (e) { /* static content already shown */ }
+  })();
+
+  // ======================= COUNTRY (in-page) =======================
+  let countryView = { mode: 'grid', id: null };
+
+  function ctryCardHTML(c) {
+    const pr = countryDocsProgress(c);
+    const unis = getCountryUnis(c.id);
+    return '<div class="ctry-card" onclick="openCountryDetail(\'' + c.id + '\')">' +
+      '<div class="ctry-icon">' + c.flag + '</div>' +
+      '<div class="prog-name">' + esc(c.name) + '</div>' +
+      '<div class="ctry-stats">' +
+        '<div class="ctry-stat"><b>' + unis.length + '</b><span>Universities</span></div>' +
+        '<div class="ctry-stat"><b>' + pr.done + '/' + pr.total + '</b><span>Docs ready</span></div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderCountryPanel() {
+    const box = document.getElementById('country-view');
+    if (!box || typeof COUNTRIES === 'undefined') return;
+    if (countryView.mode === 'detail') { renderCountryDetail(countryView.id); return; }
+    box.innerHTML = '<div class="ctry-grid">' + COUNTRIES.map(ctryCardHTML).join('') + '</div>';
+  }
+  function openCountryDetail(id) { countryView = { mode: 'detail', id }; renderCountryPanel(); }
+  function backToCountries() { countryView = { mode: 'grid', id: null }; renderCountryPanel(); }
+
+  function renderCountryDetail(id) {
+    const box = document.getElementById('country-view');
+    const c = countryById(id);
+    if (!c) { box.innerHTML = emptyState('🌍', 'Country not found.'); return; }
+    const pr = countryDocsProgress(c);
+    const pct = Math.round(pr.done / pr.total * 100);
+    const unis = getCountryUnis(c.id);
+    box.innerHTML = '<div class="ctry-detail">' +
+      '<button class="prog-back" onclick="backToCountries()">← Countries</button>' +
+      '<div class="prog-detail-head"><div><h3>' + c.flag + ' ' + esc(c.name) + '</h3></div></div>' +
+      '<div class="prog-section"><h4>Documents · ' + pr.done + '/' + pr.total + '</h4>' +
+        '<div class="chk-progress-line' + (pr.done === pr.total ? ' done' : '') + '">' +
+          '<span class="chk-count">' + pct + '%</span>' +
+          '<div class="chk-track"><div class="chk-fill" style="width:' + pct + '%"></div></div>' +
+        '</div>' +
+        '<div class="chk-list">' + c.documents.map((d, idx) =>
+          '<label class="chk-item' + (pr.checks[idx] ? ' checked' : '') + '">' +
+            '<input type="checkbox" ' + (pr.checks[idx] ? 'checked' : '') + ' data-ctry-chk-idx="' + idx + '">' +
+            '<span>' + esc(d) + '</span>' +
+          '</label>'
+        ).join('') + '</div></div>' +
+      '<div class="prog-section"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem">' +
+        '<h4 style="margin:0">University</h4><button class="btn" onclick="openCountryUniForm(\'' + c.id + '\')">+ Add University</button>' +
+      '</div>' +
+      (unis.length ? unis.map(u =>
+        '<div class="uni-mini-card"><div class="uni-mini-top"><div>' +
+          '<div class="uni-mini-name">' + esc(u.name) + '</div>' +
+          (u.details ? '<div class="uni-mini-details">' + esc(u.details) + '</div>' : '') +
+          (u.link ? '<a class="uni-mini-link" href="' + esc(u.link) + '" target="_blank" rel="noopener">Official page ↗</a>' : '') +
+          '<div><span class="status-badge st-' + (u.status || 'researching').toLowerCase() + '">' + esc(u.status || 'Researching') + '</span></div>' +
+        '</div><div class="uni-actions">' +
+          '<button class="icon-btn" onclick="openCountryUniForm(\'' + c.id + '\',\'' + u.id + '\')" title="Edit">✎</button>' +
+          '<button class="icon-btn del" onclick="deleteCountryUni(\'' + c.id + '\',\'' + u.id + '\')" title="Delete">🗑</button>' +
+        '</div></div></div>'
+      ).join('') : emptyState('🏛️', 'No universities added yet.')) +
+      '</div>' +
+    '</div>';
+
+    box.querySelectorAll('[data-ctry-chk-idx]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        toggleCountryDocCheck(c.id, parseInt(cb.dataset.ctryChkIdx, 10));
+        renderCountryDetail(id);
+        renderCountryDocsPending();
+        renderErasmusDocs();
+        renderDocs();
+      });
+    });
+  }
+
+  function countryUniFields(u) {
+    return [
+      { k: 'name', label: 'University Name', type: 'text', val: u.name, req: true, full: true },
+      { k: 'details', label: 'Details (programme, deadline, requirements, notes)', type: 'textarea', val: u.details, full: true },
+      { k: 'link', label: 'Official Link', type: 'text', val: u.link, full: true },
+      { k: 'status', label: 'Status', type: 'select', opts: ['Researching', 'Applied', 'Accepted', 'Rejected'], val: u.status || 'Researching' }
+    ];
+  }
+  function openCountryUniForm(countryId, uniId) {
+    const list = getCountryUnis(countryId);
+    const u = uniId ? (list.find(x => x.id === uniId) || {}) : {};
+    openForm({
+      title: uniId ? 'Edit University' : 'Add University',
+      sub: countryById(countryId).name,
+      fields: countryUniFields(u),
+      onSave: f => {
+        const list2 = getCountryUnis(countryId);
+        if (uniId) {
+          const existing = list2.find(x => x.id === uniId);
+          if (existing) Object.assign(existing, f);
+        } else {
+          list2.push(Object.assign({ id: uid() }, f));
+        }
+        saveCountryUnis(countryId, list2);
+        renderCountryDetail(countryId);
+        renderCountryPanel();
+      }
+    });
+  }
+  function deleteCountryUni(countryId, uniId) {
+    if (!confirm('Delete this university?')) return;
+    saveCountryUnis(countryId, getCountryUnis(countryId).filter(x => x.id !== uniId));
+    renderCountryDetail(countryId);
+  }
+
   // ======================= DOCUMENTS =======================
   // Erasmus programme + document data lives in assets/erasmus-data.js
   // (loaded via <script> in <head>) — static, so this renders instantly,
@@ -927,24 +1258,72 @@
       cb.addEventListener('change', () => {
         toggleDocCheck(cb.dataset.prog, parseInt(cb.dataset.idx, 10));
         renderErasmusDocs();
+        renderDocs();
       });
     });
+  }
+
+  function renderCountryDocsPending() {
+    const box = document.getElementById('country-docs-list');
+    if (!box || typeof COUNTRIES === 'undefined') return;
+    const summarized = COUNTRIES.map(c => {
+      const pr = countryDocsProgress(c);
+      const pending = c.documents
+        .map((d, idx) => ({ d, idx }))
+        .filter(x => !pr.checks[x.idx]);
+      const pct = pr.total ? Math.round(pr.done / pr.total * 100) : 0;
+      return { id: c.id, name: c.flag + ' ' + c.name, pending, done: pr.done, total: pr.total, pct };
+    }).sort((a, b) => a.pct - b.pct);
+    box.innerHTML = summarized.map(c =>
+      '<div class="entry"><div class="entry-top"><div>' +
+        '<div class="entry-title">' + esc(c.name) + '</div>' +
+        '<div class="entry-meta"><span>' + c.done + ' / ' + c.total + ' ready</span></div>' +
+      '</div>' +
+      '<span class="pill ' + (c.pct === 100 ? 'pill-green' : 'pill-amber') + '">' + c.pct + '%</span>' +
+      '</div>' +
+      '<div class="doc-pct-track"><div class="doc-pct-fill' + (c.pct === 100 ? ' done' : '') + '" style="width:' + c.pct + '%"></div></div>' +
+      (c.pending.length ? '<ul class="pending-doc-list">' + c.pending.map(x =>
+        '<li><label class="pending-doc-item"><input type="checkbox" data-ctry="' + c.id + '" data-idx="' + x.idx + '">' + esc(x.d) + '</label></li>'
+      ).join('') + '</ul>' : '<div class="doc-all-done">✓ All documents ready</div>') +
+      '</div>'
+    ).join('');
+    box.querySelectorAll('input[type=checkbox][data-ctry]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        toggleCountryDocCheck(cb.dataset.ctry, parseInt(cb.dataset.idx, 10));
+        renderCountryDocsPending();
+        renderDocs();
+      });
+    });
+  }
+
+  // Grand total across every document source — manual entries plus every
+  // Erasmus programme plus every country checklist — not just what was
+  // typed in manually here.
+  function allDocsStats() {
+    const manual = load('edu_docs', []);
+    let total = manual.length;
+    let ready = manual.filter(d => d.status === 'Ready' || d.status === 'Notarized').length;
+    if (typeof ERASMUS_PROGRAMS !== 'undefined') {
+      ERASMUS_PROGRAMS.forEach(p => { const pr = docsProgress(p); total += pr.total; ready += pr.done; });
+    }
+    if (typeof COUNTRIES !== 'undefined') {
+      COUNTRIES.forEach(c => { const pr = countryDocsProgress(c); total += pr.total; ready += pr.done; });
+    }
+    return { ready, total, pct: total ? Math.round(ready / total * 100) : 0 };
   }
 
   const DOC_STATUS = ['Missing', 'Pending', 'Ready', 'Notarized'];
   const docPill = { 'Missing': 'pill-red', 'Pending': 'pill-amber', 'Ready': 'pill-green', 'Notarized': 'pill-violet' };
   function renderDocs() {
     const list = load('edu_docs', []);
-    const total = list.length;
-    const ready = list.filter(d => d.status === 'Ready' || d.status === 'Notarized').length;
-    const pct = total ? Math.round((ready / total) * 100) : 0;
-    document.getElementById('docs-pct').textContent = pct + '%';
-    document.getElementById('docs-bar').style.width = pct + '%';
-    document.getElementById('docs-ready').textContent = ready;
-    document.getElementById('docs-total').textContent = total;
+    const stats = allDocsStats();
+    document.getElementById('docs-pct').textContent = stats.pct + '%';
+    document.getElementById('docs-bar').style.width = stats.pct + '%';
+    document.getElementById('docs-ready').textContent = stats.ready;
+    document.getElementById('docs-total').textContent = stats.total;
 
     const el = document.getElementById('docs-list');
-    if (!total) { el.innerHTML = emptyState('📁', 'No documents yet. Add what you need to prepare.'); return; }
+    if (!list.length) { el.innerHTML = emptyState('📁', 'No documents yet. Add what you need to prepare.'); return; }
     el.innerHTML = list.map(d => '<div class="entry"><div class="entry-top"><div>' +
       '<div class="entry-title">' + esc(d.name || 'Untitled') + '</div>' +
       (d.notes ? '<div class="entry-meta"><span>' + esc(d.notes) + '</span></div>' : '') +
@@ -1238,8 +1617,11 @@
 
   // ---- init ----
   renderUni();
-  renderDocs();
   renderErasmusDocs();
+  renderCountryDocsPending();
+  renderDocs();
+  renderScholarshipsPanel();
+  renderCountryPanel();
   renderResearch();
   renderOverview();
   (function restoreTab() {
