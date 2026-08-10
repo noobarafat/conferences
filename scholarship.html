@@ -287,74 +287,173 @@
      ============================================================ */
   const SEED = [
     {
-      name: 'DAAD Scholarship',
-      country: 'Germany', flag: '🇩🇪',
-      degree: 'Masters',
-      deadline: '2026-10-31',
-      funding: 'full',
-      status: 'researching',
-      amount: '€992 / month + travel + insurance',
-      duration: '12–24 months',
-      link: 'https://www.daad.de/en/',
-      summary: 'DAAD funds international students for Masters study at German universities across all disciplines, with a strong development-focus track.',
-      benefits: ['Monthly stipend €992', 'Health, accident & liability insurance', 'Travel allowance', 'Study & research subsidy', 'Optional German language course'],
-      eligibility: ['Bachelor degree (usually within last 6 years)', 'Min. 2 years work experience for some tracks', 'Language proof (English/German)']
-    },
-    {
-      name: 'Erasmus Mundus Joint Masters',
-      country: 'Europe', flag: '🇪🇺',
-      degree: 'Masters',
-      deadline: '2026-01-15',
-      funding: 'full',
-      status: 'applied',
-      amount: '€1,400 / month + tuition + travel',
-      duration: '24 months (2+ countries)',
-      link: 'https://www.eacea.ec.europa.eu/scholarships/emjmd-catalogue_en',
-      summary: 'Prestigious EU-funded joint Masters programs delivered by consortia of universities across multiple European countries.',
-      benefits: ['Full tuition waiver', 'Monthly living allowance €1,400', 'Travel & installation costs', 'Insurance coverage', 'Study in 2+ countries'],
-      eligibility: ['Bachelor degree', 'Apply directly to specific EMJM program', 'Strong academic record', 'English proficiency']
-    },
-    {
-      name: 'Fulbright Foreign Student',
-      country: 'USA', flag: '🇺🇸',
-      degree: 'Masters',
-      deadline: '2026-05-15',
-      funding: 'full',
-      status: 'researching',
-      amount: 'Tuition + stipend + airfare + insurance',
-      duration: '12–24 months',
-      link: 'https://foreign.fulbrightonline.org/',
-      summary: 'Flagship US government exchange program funding graduate study, administered locally through binational commissions and US embassies.',
-      benefits: ['Full tuition & fees', 'Living stipend', 'Round-trip airfare', 'Health insurance', 'J-1 visa sponsorship'],
-      eligibility: ['Bachelor degree', 'Strong leadership record', 'GRE/TOEFL typically required', 'Apply via home-country commission']
-    },
-    {
-      name: 'Swedish Institute Scholarship (SISGP)',
-      country: 'Sweden', flag: '🇸🇪',
-      degree: 'Masters',
-      deadline: '2026-02-10',
-      funding: 'full',
-      status: 'researching',
-      amount: 'SEK 12,000 / month + tuition + travel',
-      duration: '12–24 months',
-      link: 'https://si.se/en/apply/scholarships/',
-      summary: 'SI Scholarships for Global Professionals fund future leaders for Masters study in Sweden, targeting selected countries.',
-      benefits: ['Full tuition fee', 'Living allowance SEK 12,000/month', 'Travel grant SEK 15,000', 'Insurance', 'SI Network for Future Global Leaders'],
-      eligibility: ['From an eligible country', 'Min. 3,000 hrs work/leadership experience', 'Admitted to eligible Masters program', 'Applied via universityadmissions.se']
-    },
-    {
-      name: 'VLIR-UOS Scholarship',
+      name: 'EMMIE — Erasmus Mundus Master in Impact Entrepreneurship',
       country: 'Belgium', flag: '🇧🇪',
       degree: 'Masters',
-      deadline: '2026-03-01',
+      deadline: '',
       funding: 'full',
-      status: 'rejected',
-      amount: 'Tuition + monthly allowance + travel',
-      duration: '12–24 months',
-      link: 'https://www.vliruos.be/en/scholarships/',
-      summary: 'VLIR-UOS funds students from developing countries for selected Masters and training programs at Flemish universities in Belgium.',
-      benefits: ['Full tuition coverage', 'Monthly living allowance', 'International travel', 'Insurance & arrival allowance', 'Development-oriented programs'],
-      eligibility: ['From a VLIR-UOS eligible country', 'Under age limit (varies)', 'Relevant work experience', 'Admitted to an eligible ICP program']
+      status: 'researching',
+      amount: 'Full Erasmus Mundus scholarship (tuition, stipend, travel, insurance). Max 2 candidates per country.',
+      duration: '18 months, 90 ECTS',
+      link: 'https://www.emmie.uliege.be',
+      summary: 'Priority tier A (safe, GPA-friendly). Open to any academic background — strongest business-side pick, founder profile is their target. Coordinator: HEC Liege. Partners: ZSEM Zagreb (start), ISM Vilnius. 2026 cycle: scholarship round ~6 Oct 2025 – 6 Jan 2026 — confirm new call date on official site. Apply via Airtable guidelines page.',
+      benefits: [
+        'Bachelor of 240 ECTS (4-year degree qualifies), any field — no GPA cutoff',
+        'English: IELTS/TOEFL min B2, C1 recommended (waived if degree fully taught in English)',
+        'Motivation letter 1500–2500 characters, one page, no AI',
+        'Two recommendation letters (academic and/or professional), uploaded by me',
+        'Optional one-page entrepreneurial project description — strong for my agency background',
+        'CV (Europass), certified diplomas + transcripts, passport, photo, birth certificate'
+      ],
+      eligibility: [
+        'Bachelor of 240 ECTS, any field, English B2 (C1 preferred)',
+        '2 recommendation letters, academic and/or professional',
+        'No written test-waiver needed if Bachelor fully in English',
+        'No GPA cutoff — my 2.96/4.0 does not disqualify'
+      ]
+    },
+    {
+      name: 'DCLead (TECMAN) — Digital Communication Leadership',
+      country: 'Austria', flag: '🇦🇹',
+      degree: 'Masters',
+      deadline: '',
+      funding: 'partial',
+      status: 'researching',
+      amount: 'Full Erasmus Mundus scholarship; roughly 50-50 scholarship to self-funded per intake.',
+      duration: '2 years, 120 ECTS',
+      link: 'https://dclead.eu',
+      summary: 'Priority tier A — strongest overall fit. TECMAN track suits CSE, no GPA required, professional references allowed. Coordinator: University of Salzburg (start). Partners: Aalborg Copenhagen, VUB Brussels, Wageningen. Two-phase process (application then registration); English test only needed at phase-2 shortlist. Deadline not published for next cycle — historically ~Dec to mid-Jan.',
+      benefits: [
+        'TECMAN and POLINN tracks need no GPA (ICT4D wants 70%+; my 2.96 ≈ 74%)',
+        'Motivation letter 4000–6000 characters, strict format (Times New Roman/Book Antiqua 12pt, A4, 1.5 spacing, PDF)',
+        'Two recommendation letters, academic or professional — referees confirm via work email/LinkedIn',
+        'English test proof needed only at phase-2 shortlist — argue level in motivation letter for phase 1',
+        'Passport pages required only if shortlisted for scholarship phase 2'
+      ],
+      eligibility: [
+        'Bachelor of 180+ ECTS in IT, telecom, informatics or similar',
+        'No GPA requirement for TECMAN track',
+        '2 recommendation letters, academic or professional',
+        'English proof deferred to shortlist stage'
+      ]
+    },
+    {
+      name: 'SE4GD — Software Engineers for Green Deal',
+      country: 'Finland', flag: '🇫🇮',
+      degree: 'Masters',
+      deadline: '',
+      funding: 'full',
+      status: 'researching',
+      amount: 'Full Erasmus Mundus scholarship.',
+      duration: '2 years, 120 ECTS',
+      link: 'https://se4gd.eu',
+      summary: 'Priority tier A — realistic, points-based selection. Coordinator: LUT University. Partners: University of L\'Aquila (start), VU Amsterdam. Scoring: academic record 60 pts (degree match + GPA), motivation 20 pts, track record 20 pts, then RecRight interview up to 40 pts — need ≥50% total and must attend. 2026 cycle: scholarship round ~Dec–Jan; English test result by 31 Jan.',
+      benefits: [
+        'CS/IT/Software Engineering/Information Engineering/Business Informatics backgrounds accepted',
+        'Work experience and references feed the 20-point track record score — plays to my 3 years + agency work',
+        'Motivation letter scored up to 20 of 100 points',
+        'English test can be supplemented ~2 weeks after deadline'
+      ],
+      eligibility: [
+        'Bachelor of 180 ECTS in CS/IT/related; university on WHED database',
+        'IELTS Academic 6.5 or TOEFL iBT 93 — strict, no university-issued certificates',
+        'GPA scored (not a hard cutoff) — 2.96/4.0 ≈ 3.7/5, ~11 of 30 GPA points',
+        'RecRight video interview required, ≥50% total score to pass'
+      ]
+    },
+    {
+      name: 'CLIDE — Intercultural Leadership in the Digital Era',
+      country: 'Poland', flag: '🇵🇱',
+      degree: 'Masters',
+      deadline: '',
+      funding: 'full',
+      status: 'researching',
+      amount: 'Full Erasmus Mundus scholarship (~€1,400/month).',
+      duration: '2 years, 120 ECTS',
+      link: 'https://clide.umk.pl',
+      summary: 'Priority tier B — holistic backup. Leadership in Digital Economy track: GPA not a barrier, professional reference and video let me show strengths. Coordinator: Nicolaus Copernicus University Torun, plus partners in Spain, Austria and Morocco. Runs a spring cycle (different from the others) — 2026 intake opened 29 Mar, closed 15 Apr; 2027/2028 round opens ~Feb 2027.',
+      benefits: [
+        'No fixed GPA cutoff — holistic selection',
+        'One academic + one professional recommendation letter accepted',
+        'Video business card (~2 min) lets me showcase founder experience directly',
+        'No previous Erasmus Mundus scholarship allowed'
+      ],
+      eligibility: [
+        'Bachelor in economics, finance, IT, communication, management or related, English B2',
+        '2 recommendation letters: one academic, one professional',
+        'Motivation letter ~3000 characters',
+        'Video business card ~2 minutes required',
+        'Eligibility statement confirming Bachelor qualifies for master\'s entry in Bangladesh'
+      ]
+    },
+    {
+      name: 'EMILDAI (Computing Stream) — Law, Data and Artificial Intelligence',
+      country: 'Ireland', flag: '🇮🇪',
+      degree: 'Masters',
+      deadline: '',
+      funding: 'partial',
+      status: 'researching',
+      amount: '2026-2028 page lists 24 partial fee waivers + EMILDAI Merit Scholarships + health insurance — confirm full-scholarship availability for my intake.',
+      duration: '2 years, 120 ECTS',
+      link: 'https://emildai.eu',
+      summary: 'Priority tier B — interdisciplinary hedge bridging data and business/policy; accepts computing profiles. Coordinator: Dublin City University. Partners: University of Leon, Italy, France, Erasmus University Rotterdam, FGV Rio. Round 1 (2026-2028) opened 10 Nov 2025, deadline 25 Jan 2026; second self-funded round in spring 2026. Check funding type carefully before committing.',
+      benefits: [
+        'Computing Stream accepts computing/law-adjacent backgrounds',
+        'Holistic selection, no GPA cutoff emphasised',
+        'Referees submit recommendation letters directly (plan for 2)'
+      ],
+      eligibility: [
+        'Bachelor in law, computing or related (I apply Computing Stream)',
+        'English B2+; French or Spanish may be needed for some second-year tracks',
+        '2 recommendation letters via referees',
+        'Motivation letter tailored to law + data + AI'
+      ]
+    },
+    {
+      name: 'EDISS — Engineering of Data-intensive Intelligent Software Systems',
+      country: 'Finland', flag: '🇫🇮',
+      degree: 'Masters',
+      deadline: '',
+      funding: 'full',
+      status: 'researching',
+      amount: 'Full Erasmus Mundus scholarship.',
+      duration: '2 years, 120 ECTS',
+      link: 'https://www.master-ediss.eu',
+      summary: 'Priority tier B — realistic data option, content matches CS degree directly. Coordinator: Abo Akademi University. Partners: University of the Balearic Islands, University of L\'Aquila, Malardalen University. Wants two ACADEMIC references and a motivation video — line up two professors early. 2026 cycle: scholarship round ~Dec–Jan; self-funded round opened 13 Apr 2026; conditional docs due 31 Jul 2026.',
+      benefits: [
+        'CV uses official EDISS template (5 sections incl. work/entrepreneurial experience, up to 4 entries)',
+        'No hard GPA cutoff — state CGPA, max CGPA and grading scale explicitly',
+        'Motivation VIDEO (2 min ± 30s) replaces written letter — answers 3 set questions'
+      ],
+      eligibility: [
+        'Bachelor of 180 ECTS in CS/Software Engineering or equivalent',
+        'TOEFL iBT 93 or IELTS Academic 6.5, no band below 6 — home editions not accepted',
+        '2 recommendation letters, ACADEMIC ONLY, signed with letterhead/stamp preferred',
+        'Certificates proving every experience listed in CV'
+      ]
+    },
+    {
+      name: 'DEAI — Data Engineering and Artificial Intelligence',
+      country: 'Belgium', flag: '🇧🇪',
+      degree: 'Masters',
+      deadline: '',
+      funding: 'full',
+      status: 'researching',
+      amount: 'Full Erasmus Mundus scholarship for the grant round.',
+      duration: '2 years, 120 ECTS',
+      link: 'https://deai.ulb.be',
+      summary: 'Priority tier C — ambitious reach. Strong data/AI content but very competitive and academic-leaning (successor to BDMA). Coordinator: ULB Brussels. Partners: UPC Barcelona, TU Wien, University of Padova, Lyon 1. Grant round ~Nov–Jan; self-funded strict deadlines non-EU 30 Apr 2026, EU 30 Jun 2026. Make the cover letter show concrete agency data/analytics work.',
+      benefits: [
+        'Cover letter scored on organisation, sequencing, content, vocabulary, critical thinking, originality, accuracy',
+        'Reference letters scored partly on referee academic standing (H-factor)',
+        'Portal provides templates for transcripts and reference letters — do not email documents'
+      ],
+      eligibility: [
+        'Bachelor of 180 ECTS, Computer Science preferred, university on IAU handbook/recognised rankings',
+        'English B2 by a recognised test',
+        '2 reference letters, referees upload directly via template',
+        'No published GPA cutoff, but very competitive'
+      ]
     }
   ];
 
