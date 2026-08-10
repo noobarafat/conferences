@@ -232,15 +232,22 @@
   .pub-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding: 1.5rem 3rem 0; }
   .pub-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.3rem; position: relative; overflow: hidden; display: flex; flex-direction: column; transition: transform .2s, box-shadow .2s, border-color .2s; animation: fadeUp .35s ease both; }
   .pub-card:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(0,0,0,.45); border-color: rgba(124,92,252,.5); }
-  .pub-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent2), var(--accent)); opacity: 0; transition: opacity .2s; }
+  .pub-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--pub-accent, linear-gradient(90deg, var(--accent2), var(--accent))); opacity: 0; transition: opacity .2s; }
   .pub-card:hover::before { opacity: 1; }
-  .pub-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: .8rem; }
-  .pub-idx { font-family: 'Space Mono', monospace; font-size: .82rem; font-weight: 700; color: var(--accent2); background: rgba(124,92,252,.12); width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .pub-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: .8rem; gap: .5rem; }
+  .pub-top-l { display: flex; align-items: center; gap: .5rem; }
+  .pub-idx { font-family: 'Space Mono', monospace; font-size: .82rem; font-weight: 700; color: var(--accent2); background: rgba(124,92,252,.12); width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .pub-title { font-size: .9rem; font-weight: 600; line-height: 1.4; letter-spacing: -.01em; flex: 1; }
   .pub-title a { color: var(--text); text-decoration: none; border-bottom: 1px solid rgba(124,92,252,.35); transition: color .2s, border-color .2s; }
   .pub-title a:hover { color: var(--accent2); border-color: var(--accent2); }
-  .pub-venue { font-size: .72rem; color: var(--muted); margin-top: .7rem; display: flex; align-items: center; gap: .4rem; line-height: 1.4; }
-  .pub-foot { margin-top: auto; padding-top: .9rem; }
+  .pub-venue { font-size: .72rem; color: var(--muted); margin-top: .7rem; display: flex; align-items: flex-start; gap: .4rem; line-height: 1.4; }
+  .pub-foot { margin-top: auto; padding-top: .9rem; display: flex; flex-direction: column; gap: .55rem; }
+  .pub-index-badge { font-family: 'Space Mono', monospace; font-size: .58rem; letter-spacing: .04em; font-weight: 700; padding: .22rem .55rem; border-radius: 6px; white-space: nowrap; display: inline-flex; align-items: center; gap: .3rem; }
+  .idx-ieee { background: rgba(0,132,209,.15); color: #4fa8e8; }
+  .idx-springer { background: rgba(255,190,20,.15); color: #f5c518; }
+  .idx-atlantis { background: rgba(46,204,138,.15); color: var(--green); }
+  .idx-rg { background: rgba(124,92,252,.15); color: var(--accent2); }
+  .pub-link-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
 
   /* ===== STATUS PILLS ===== */
   .pill { font-family: 'Space Mono', monospace; font-size: .58rem; letter-spacing: .05em; text-transform: uppercase; padding: .22rem .6rem; border-radius: 20px; white-space: nowrap; }
@@ -282,17 +289,6 @@
     .pub-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
-  /* conference card admin */
-  .card-actions { display: none; gap: .4rem; margin: .7rem 0 0; padding-top: .7rem; border-top: 1px dashed var(--border); }
-  body.conf-admin .card-actions { display: flex; }
-  .mini-btn { font-family: 'Space Mono', monospace; font-size: .58rem; letter-spacing: .05em; text-transform: uppercase; padding: .3rem .6rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all .2s; }
-  .mini-btn.edit:hover { border-color: var(--accent); color: var(--accent); }
-  .mini-btn.del:hover  { border-color: var(--red); color: var(--red); }
-  .conf-banner { font-size: .78rem; padding: .6rem 1rem; border-radius: 8px; margin: .8rem 3rem 0; display: none; }
-  .conf-banner.show { display: block; }
-  .conf-banner.warn { background: rgba(245,166,35,.12); color: var(--amber); border: 1px solid rgba(245,166,35,.3); }
-  .conf-banner.err  { background: rgba(255,95,95,.12); color: var(--red); border: 1px solid rgba(255,95,95,.3); }
-  .admin-btn.on { background: var(--green); border-color: var(--green); color: #04120c; }
 </style>
 </head>
 <body>
@@ -339,6 +335,7 @@
     </div>
     <div style="display:flex;gap:.6rem;flex-wrap:wrap">
       <a class="btn btn-ghost" href="https://www.researchgate.net/profile/K-M-Arafat-Islam" target="_blank" rel="noopener" style="text-decoration:none">🎓 ResearchGate</a>
+      <a class="btn btn-ghost" href="https://scholar.google.com/citations?user=kdCgf78AAAAJ&hl=en" target="_blank" rel="noopener" style="text-decoration:none">📚 Google Scholar</a>
       <button class="btn" onclick="openPaperForm()">+ Add Paper</button>
     </div>
   </div>
@@ -352,11 +349,7 @@
 
   <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin:2.4rem 3rem 0">
     <p class="section-label" style="margin:0;flex:1">Conference deadlines · Bangladesh</p>
-    <button class="btn admin-btn" id="conf-admin-btn" onclick="toggleConfAdmin()">Admin</button>
-    <button class="btn" style="display:none" id="conf-add-btn" onclick="openConfForm(null)">+ Add Conference</button>
-    <button class="btn btn-ghost" style="display:none" id="conf-import-btn" onclick="importConfSeed()">⬇ Import seed</button>
   </div>
-  <div class="conf-banner" id="conf-banner"></div>
 <main>
   <div class="filters">
     <button class="filter-btn active" onclick="filterCards('all',this)">All</button>
@@ -365,7 +358,7 @@
     <button class="filter-btn filter-ended" onclick="filterCards('ended',this)">Ended <span id="ended-count">0</span></button>
     <button class="filter-btn filter-papers" onclick="openPapers()">📄 My Papers <span id="paper-count">0</span></button>
   </div>
-  <p class="section-label" style="margin-top:1.6rem">Open for submission · sorted by deadline</p>
+  <p class="section-label" id="conf-section-label" style="margin-top:1.6rem">Open for submission · sorted by deadline</p>
   <div class="cards" id="conf-cards"></div>
 </main>
 </section>
@@ -650,7 +643,7 @@
   }
 
   function updateSectionLabel() {
-    const label = document.querySelector('.section-label');
+    const label = document.getElementById('conf-section-label');
     if (!label) return;
     label.textContent = activeFilter === 'ended'
       ? 'Ended · deadline passed'
@@ -766,9 +759,8 @@
      ======================================================== */
   const CONF_TAB = 'Conferences';
   let CONFS = [];
-  let CONF_ADMIN = false;
 
-  // Seed = the original 12 cards. Used as fallback + the "Import seed" source.
+  // Seed = the built-in conference list. Used as fallback when the Sheet is empty/unset.
   const CONF_SEED = [
     { name:"ICISET 2026", url:"https://iciset.iiuc.ac.bd/", full:"Int'l Conf on Innovations in Science, Engineering and Technology", deadline:"2026-08-11", extended:"yes", notification:"2026-09-12", cameraReady:"2026-09-26", registration:"2026-09-26", event:"Nov 7–9, 2026", venue:"IIUC, Chittagong", glow:"" },
     { name:"iCACCESS 2026", url:"https://icaccess.ulab.edu.bd/", full:"Int'l Conf on Advances in Computing, Communication, Electrical & Smart Systems", deadline:"2026-07-22", extended:"yes", notification:"2026-09-07", cameraReady:"2026-09-15", registration:"2026-09-22", event:"Oct 2–3, 2026", venue:"ULAB, Dhaka", glow:"" },
@@ -801,21 +793,9 @@
     return o;
   }
 
-  function confBanner(msg, kind) {
-    const b = document.getElementById('conf-banner');
-    if (!b) return;
-    if (!msg) { b.className = 'conf-banner'; return; }
-    b.className = 'conf-banner show ' + (kind || 'warn');
-    b.textContent = msg;
-  }
-
   function confCardHTML(c) {
     const ext = isYes(c.extended) ? ' <span class="ext-tag">EXTENDED</span>' : '';
     const glow = isYes(c.glow) ? ' blue-glow' : '';
-    const actions = '<div class="card-actions">' +
-      '<button class="mini-btn edit" onclick="openConfForm(\'' + c.id + '\')">Edit</button>' +
-      '<button class="mini-btn del" onclick="delConf(\'' + c.id + '\')">Delete</button>' +
-      '</div>';
     return '<div class="card' + glow + '" data-deadline="' + esc(c.deadline || '2099-01-01') + '">' +
       '<div class="card-top"><div>' +
         '<div class="conf-name"><a href="' + esc(c.url || '#') + '" target="_blank" rel="noopener">' + esc(c.name) + '</a></div>' +
@@ -828,7 +808,6 @@
         '<div><div class="date-label">Registration</div><div class="date-value">' + prettyConf(c.registration) + '</div></div>' +
       '</div>' +
       '<div class="countdown"><span class="countdown-label">Submission closes in</span><span class="countdown-days">—</span></div>' +
-      actions +
       '<div class="conf-date-bar"><span class="conf-date-badge">📅 ' + esc(c.event || '') + '</span><span class="venue">' + esc(c.venue || '') + '</span></div>' +
       '</div>';
   }
@@ -845,108 +824,16 @@
     if (window.SHEET && SHEET.configured()) {
       try {
         const rows = await SHEET.get(CONF_TAB);
-        if (rows.length) {
-          CONFS = rows.map(normalizeConf);
-          confBanner('');
-        } else {
-          CONFS = CONF_SEED.map(normalizeConf);
-          confBanner('Conferences tab is empty. Turn on Admin → “Import seed” to load these into the Sheet.', 'warn');
-        }
+        CONFS = (rows.length ? rows : CONF_SEED).map(normalizeConf);
       } catch (err) {
-        // tab may not exist yet — show seed, offer import
         CONFS = CONF_SEED.map(normalizeConf);
-        confBanner('No “Conferences” tab yet. Admin → “Import seed” creates it. (' + err.message + ')', 'warn');
       }
     } else {
       CONFS = CONF_SEED.map(normalizeConf);
-      confBanner('Google Sheet not connected — showing built-in list. See backend/SETUP.md.', 'warn');
     }
     renderConfCards();
     const ov = document.getElementById('panel-overview');
     if (ov && ov.classList.contains('active') && typeof renderOverview === 'function') renderOverview();
-  }
-
-  /* ---- conference admin ---- */
-  function confById(id) { return CONFS.find(x => String(x.id) === String(id)); }
-
-  function toggleConfAdmin() {
-    const btn = document.getElementById('conf-admin-btn');
-    const add = document.getElementById('conf-add-btn');
-    const imp = document.getElementById('conf-import-btn');
-    if (CONF_ADMIN) {
-      CONF_ADMIN = false;
-      if (window.SHEET) SHEET.setToken(null);
-      document.body.classList.remove('conf-admin');
-      btn.classList.remove('on'); btn.textContent = 'Admin';
-      add.style.display = 'none'; imp.style.display = 'none';
-      confBanner('');
-      return;
-    }
-    if (!window.SHEET || !SHEET.configured()) {
-      confBanner('Connect the Google Sheet first (assets/sheet-api.js + backend/SETUP.md) to edit.', 'warn');
-      return;
-    }
-    const t = prompt('Enter admin token (API_TOKEN from backend/Code.gs):');
-    if (!t) return;
-    SHEET.setToken(t.trim());
-    CONF_ADMIN = true;
-    document.body.classList.add('conf-admin');
-    btn.classList.add('on'); btn.textContent = 'Admin ✓';
-    add.style.display = ''; imp.style.display = '';
-    confBanner('Admin on. Edit / Delete on each card, or Add / Import seed.', 'warn');
-  }
-
-  function confFields(c) {
-    c = c || {};
-    return [
-      { k:'name', label:'Name', type:'text', val:c.name, req:true, full:true },
-      { k:'url', label:'Official link', type:'text', val:c.url, full:true },
-      { k:'full', label:'Full name', type:'text', val:c.full, full:true },
-      { k:'deadline', label:'Paper Submission', type:'date', val:c.deadline },
-      { k:'extended', label:'Extended?', type:'select', opts:['no','yes'], val:isYes(c.extended)?'yes':'no' },
-      { k:'notification', label:'Notification', type:'date', val:c.notification },
-      { k:'cameraReady', label:'Camera Ready', type:'date', val:c.cameraReady },
-      { k:'registration', label:'Registration', type:'date', val:c.registration },
-      { k:'event', label:'Event date (text, e.g. Nov 7–9, 2026)', type:'text', val:c.event, full:true },
-      { k:'venue', label:'Venue', type:'text', val:c.venue, full:true },
-      { k:'glow', label:'Highlight (blue glow)?', type:'select', opts:['no','yes'], val:isYes(c.glow)?'yes':'no' }
-    ];
-  }
-
-  function openConfForm(id) {
-    const c = id ? confById(id) : {};
-    openForm({
-      title: id ? 'Edit Conference' : 'Add Conference',
-      sub: id ? esc(c.name || '') : 'New conference',
-      fields: confFields(c),
-      onSave: async data => {
-        try {
-          if (id) { data.id = id; await SHEET.update(CONF_TAB, data); }
-          else { await SHEET.create(CONF_TAB, data); }
-          await loadConferences();
-        } catch (err) { confBanner('Save failed: ' + err.message, 'err'); }
-      }
-    });
-  }
-
-  async function delConf(id) {
-    const c = confById(id);
-    if (!confirm('Delete "' + (c ? c.name : id) + '"? Removes the row from the Sheet.')) return;
-    try { await SHEET.remove(CONF_TAB, id); await loadConferences(); }
-    catch (err) { confBanner('Delete failed: ' + err.message, 'err'); }
-  }
-
-  async function importConfSeed() {
-    if (!confirm('Import all ' + CONF_SEED.length + ' built-in conferences into the Sheet? Run once.')) return;
-    confBanner('Importing…', 'warn');
-    try {
-      for (const c of CONF_SEED) {
-        const rec = Object.assign({}, c); delete rec.id;
-        await SHEET.create(CONF_TAB, rec);
-      }
-      await loadConferences();
-      confBanner('Imported ' + CONF_SEED.length + ' conferences into the Sheet.', 'warn');
-    } catch (err) { confBanner('Import failed: ' + err.message, 'err'); }
   }
 
   renderModal();
@@ -1193,17 +1080,17 @@
   const PUBLISHED_PAPERS = [
     {
       title: 'Early Detection of Mental Health Disorders Among Private University Students in Bangladesh Using Machine Learning-Based Behavioral Data Analysis',
-      venue: '', year: '',
+      venue: 'Int\'l Conf on Intelligent Data Analysis and Applications (IDAA 2025), Atlantis Press', year: '2026',
       link: 'https://books.google.com/books?hl=en&lr=&id=twDjEQAAQBAJ&oi=fnd&pg=PA409&dq=info:ncOTs9iW1OAJ:scholar.google.com&ots=TXksVLu8qt&sig=yAtO5_CzdKv8NaKR6aLz2mImtW8'
     },
     {
       title: 'Ensemble Deep Learning for Automated Multiclass Classification of Gastrointestinal Disorders in Endoscopic Images',
-      venue: '', year: '',
+      venue: '2025 IEEE Int\'l Women in Engineering (WIE) Conf on Electrical & Computer Eng (WIECON-ECE)', year: '2025',
       link: 'https://ieeexplore.ieee.org/abstract/document/11526535'
     },
     {
       title: 'Rank-Based Ensemble Learning for Early Detection of Mental Health Disorders in Private University Students',
-      venue: '', year: '',
+      venue: '2025 IEEE Int\'l Women in Engineering (WIE) Conf on Electrical & Computer Eng (WIECON-ECE)', year: '2025',
       link: 'https://ieeexplore.ieee.org/abstract/document/11526507'
     },
     {
@@ -1213,12 +1100,12 @@
     },
     {
       title: 'DeepCactus: A Transfer Learning-Driven CNN Model for Accurate Identification of Morphologically Overlapping Cactus Breeds',
-      venue: '', year: '',
+      venue: 'Int\'l Conf on Big Data, IoT and Machine Learning, Springer Nature Switzerland', year: '2025',
       link: 'https://link.springer.com/chapter/10.1007/978-3-032-15346-3_44'
     },
     {
       title: 'Explainable Deep Neural Diagnostics: Vision Transformer-Based Retinal Disease Classification from OCT Images Using Gradient-Driven Visual Attribution',
-      venue: '', year: '',
+      venue: 'Int\'l Conf on Big Data, IoT and Machine Learning, Springer Nature Switzerland', year: '2025',
       link: 'https://link.springer.com/chapter/10.1007/978-3-032-15346-3_17'
     },
     {
@@ -1228,7 +1115,7 @@
     },
     {
       title: 'Resource-Efficient Deep Ensembles for Structured Retail Time-Series Forecasting: A Case Study on Walmart Sales',
-      venue: '', year: '',
+      venue: '2025 IEEE 4th Int\'l Conf on Robotics, Automation, AI and IoT (RAAICON)', year: '2025',
       link: 'https://ieeexplore.ieee.org/abstract/document/11502248'
     }
   ];
@@ -1247,18 +1134,27 @@
       year: p.year || '', link: p.link || RG_PROFILE, source: 'rg'
     }));
   }
+  /* which index/database a paper lives in, derived from its source link */
+  function paperIndex(link) {
+    if (/ieeexplore\.ieee\.org/.test(link)) return { cls: 'idx-ieee', accent: '#4fa8e8', label: 'IEEE Xplore', ico: '⚡' };
+    if (/link\.springer\.com/.test(link)) return { cls: 'idx-springer', accent: '#f5c518', label: 'Springer', ico: '📗' };
+    if (/books\.google\.com|atlantis-press/.test(link)) return { cls: 'idx-atlantis', accent: '#2ecc8a', label: 'Atlantis Press', ico: '📘' };
+    return { cls: 'idx-rg', accent: '#7c5cfc', label: 'ResearchGate', ico: '🎓' };
+  }
   function renderPublishedCards() {
     document.getElementById('pub-count').textContent = PUBLISHED_PAPERS.length;
     document.getElementById('pub-grid').innerHTML = PUBLISHED_PAPERS.map((p, i) => {
       const link = p.link || RG_PROFILE;
-      return '<div class="pub-card">' +
-        '<div class="pub-top"><span class="pub-idx">' + String(i + 1).padStart(2, '0') + '</span>' +
+      const idx = paperIndex(link);
+      return '<div class="pub-card" style="--pub-accent:' + idx.accent + '">' +
+        '<div class="pub-top"><div class="pub-top-l"><span class="pub-idx">' + String(i + 1).padStart(2, '0') + '</span>' +
+        '<span class="pub-index-badge ' + idx.cls + '">' + idx.ico + ' ' + idx.label + '</span></div>' +
         '<span class="pill pill-violet">Published</span></div>' +
         '<div class="pub-title"><a href="' + esc(link) + '" target="_blank" rel="noopener">' + esc(p.title) + '</a></div>' +
         '<div class="pub-foot">' +
         '<div class="pub-venue">🏛️ <span>' + (p.venue ? esc(p.venue) : '<i style="opacity:.6">venue not set</i>') +
         (p.year ? ' · ' + esc(p.year) : '') + '</span></div>' +
-        '<div class="pub-venue">🔗 <a href="' + esc(link) + '" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:none">View source ↗</a></div>' +
+        '<div class="pub-link-row"><a href="' + esc(link) + '" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:none;font-size:.72rem">🔗 View source ↗</a></div>' +
         '</div></div>';
     }).join('');
   }
@@ -1277,13 +1173,15 @@
     const counts = {};
     PAPER_STATUS.forEach(s => counts[s] = 0);
     list.forEach(p => { if (counts[p.status] != null) counts[p.status]++; });
+    const indexedCount = PUBLISHED_PAPERS.filter(p => paperIndex(p.link || '').cls !== 'idx-rg').length;
     const tiles = [
       { l: 'Total', v: list.length, c: 'stat-accent' },
+      { l: 'Published', v: PUBLISHED_PAPERS.length, c: 'stat-violet' },
+      { l: 'Indexed (IEEE/Springer)', v: indexedCount, c: 'stat-green' },
       { l: 'Writing', v: counts['Writing'], c: 'stat-muted' },
       { l: 'Submitted', v: counts['Submitted'], c: 'stat-accent' },
       { l: 'Under Review', v: counts['Under Review'], c: 'stat-amber' },
       { l: 'Accepted', v: counts['Accepted'], c: 'stat-green' },
-      { l: 'Published', v: counts['Published'], c: 'stat-violet' },
       { l: 'Rejected', v: counts['Rejected'], c: 'stat-red' }
     ];
     document.getElementById('research-stats').innerHTML = tiles.map(t =>
