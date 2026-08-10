@@ -202,15 +202,6 @@
   .prog-fill.g { background: linear-gradient(90deg, var(--green), var(--accent)); }
   .prog-fill.a { background: linear-gradient(90deg, var(--amber), #ffb347); }
 
-  /* ===== IELTS SECTION CARDS ===== */
-  .ielts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px,1fr)); gap: 1rem; padding: 1.8rem 3rem 0; }
-  .ielts-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.3rem 1.4rem; }
-  .ielts-card h4 { font-size: .95rem; font-weight: 600; display: flex; align-items: center; justify-content: space-between; }
-  .ielts-card .band { font-family: 'Space Mono', monospace; }
-  .ielts-card .band b { color: var(--accent); font-size: 1.15rem; }
-  .ielts-card .band-target { color: var(--muted); font-size: .8rem; }
-  .ielts-card .rng { width: 100%; margin-top: .9rem; accent-color: var(--accent); }
-  .ielts-card .rng-labels { display: flex; justify-content: space-between; font-size: .6rem; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: .2rem; }
 
   /* ===== DATA TABLES / LIST ROWS ===== */
   .entry-list { padding: 1.5rem 3rem 0; display: flex; flex-direction: column; gap: .8rem; }
@@ -268,7 +259,7 @@
   .field input[type=range] { padding: 0; accent-color: var(--accent); }
   .form-actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1.4rem; }
 
-  /* IELTS exam countdown hero */
+  /* exam/deadline countdown hero */
   .exam-hero { background: linear-gradient(135deg, var(--surface2), var(--surface)); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem 1.7rem; margin: 1.8rem 3rem 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
   .exam-hero .eh-label { font-family: 'Space Mono', monospace; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
   .exam-hero .eh-count { font-family: 'Space Mono', monospace; font-size: 2.4rem; font-weight: 700; color: var(--accent); line-height: 1; margin-top: .3rem; }
@@ -280,7 +271,7 @@
     .dates-grid { grid-template-columns: 1fr; }
     .tab-nav { padding: 0 .75rem; }
     .tab-btn { padding: .85rem .7rem; font-size: .64rem; }
-    .panel-head, .stat-row, .ielts-grid, .entry-list, .exam-hero, .empty-state, .pub-grid { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .panel-head, .stat-row, .entry-list, .exam-hero, .empty-state, .pub-grid { padding-left: 1.25rem; padding-right: 1.25rem; }
     .exam-hero { margin-left: 1.25rem; margin-right: 1.25rem; }
     .form-grid { grid-template-columns: 1fr; }
     .pub-grid { grid-template-columns: 1fr; }
@@ -298,7 +289,7 @@
     <div>
       <p class="header-label">Education Dashboard · Bangladesh · 2026–2027</p>
       <h1>Education <span>Dashboard</span></h1>
-      <p class="header-sub">Conferences, IELTS prep, university applications, documents and research — all in one place.</p>
+      <p class="header-sub">Conferences, university applications, documents and research — all in one place.</p>
     </div>
     <div class="today-badge" aria-live="polite">Today<strong id="today-date">—</strong><span class="today-time" id="current-time">—</span></div>
   </div>
@@ -306,7 +297,6 @@
 
 <nav class="tab-nav" id="tab-nav">
   <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview',this)"><span class="tab-ico">📊</span>Overview</button>
-  <button class="tab-btn" data-tab="ielts" onclick="switchTab('ielts',this)"><span class="tab-ico">📝</span>IELTS</button>
   <button class="tab-btn" data-tab="uni" onclick="switchTab('uni',this)"><span class="tab-ico">🏛️</span>Universities</button>
   <button class="tab-btn" data-tab="docs" onclick="switchTab('docs',this)"><span class="tab-ico">📁</span>Documents</button>
   <button class="tab-btn" data-tab="research" onclick="switchTab('research',this)"><span class="tab-ico">🔬</span>Research</button>
@@ -318,7 +308,7 @@
   <div class="panel-head">
     <div>
       <h2>Your <span>Snapshot</span></h2>
-      <p>Everything at a glance — IELTS, papers, applications and documents.</p>
+      <p>Everything at a glance — papers, applications and documents.</p>
     </div>
   </div>
   <div class="stat-row" id="ov-stats"></div>
@@ -361,52 +351,6 @@
   <p class="section-label" id="conf-section-label" style="margin-top:1.6rem">Open for submission · sorted by deadline</p>
   <div class="cards" id="conf-cards"></div>
 </main>
-</section>
-
-<!-- ============ TAB: IELTS ============ -->
-<section class="tab-panel" id="panel-ielts">
-  <div class="panel-head">
-    <div>
-      <h2>IELTS <span>Tracker</span></h2>
-      <p>Band progress by section, exam countdown and weekly study hours.</p>
-    </div>
-    <button class="btn btn-ghost" onclick="openIeltsSettings()">⚙ Settings</button>
-  </div>
-
-  <div class="exam-hero">
-    <div>
-      <div class="eh-label">Countdown to exam</div>
-      <div class="eh-count" id="ielts-countdown">—</div>
-      <div class="eh-date" id="ielts-exam-line">No exam date set</div>
-    </div>
-    <div style="text-align:right">
-      <div class="eh-label">Registration</div>
-      <div id="ielts-reg-pill" style="margin-top:.4rem"></div>
-      <div class="eh-label" style="margin-top:.9rem">Overall target</div>
-      <div class="eh-count" id="ielts-target" style="font-size:1.6rem">7.5</div>
-    </div>
-  </div>
-
-  <div class="stat-row">
-    <div class="stat-tile">
-      <div class="stat-label">Current Overall</div>
-      <div class="stat-val stat-accent" id="ielts-overall">—</div>
-      <div class="stat-sub">avg of 4 sections</div>
-    </div>
-    <div class="stat-tile">
-      <div class="stat-label">Study Hours · This Week</div>
-      <div class="stat-val stat-green" id="ielts-hours">0</div>
-      <div class="stat-sub"><button class="btn btn-ghost btn-sm" onclick="logHours()">+ Log hours</button></div>
-    </div>
-    <div class="stat-tile">
-      <div class="stat-label">Gap to Target</div>
-      <div class="stat-val stat-amber" id="ielts-gap">—</div>
-      <div class="stat-sub">bands to gain</div>
-    </div>
-  </div>
-
-  <div class="ielts-grid" id="ielts-sections"></div>
-  <div style="height:2.5rem"></div>
 </section>
 
 <!-- ============ TAB: UNIVERSITIES ============ -->
@@ -878,99 +822,6 @@
     return { txt: days + (days === 1 ? ' day' : ' days'), line: prettyDate(ds) };
   }
 
-  // ======================= IELTS =======================
-  const IELTS_SECTIONS = ['Listening', 'Reading', 'Writing', 'Speaking'];
-  function ieltsDefault() {
-    return {
-      target: 7.5, examDate: '', reg: 'Not registered', hours: 0, weekKey: currentWeekKey(),
-      sections: { Listening: { cur: 6, target: 7.5 }, Reading: { cur: 6, target: 7.5 }, Writing: { cur: 6, target: 7 }, Speaking: { cur: 6, target: 7 } }
-    };
-  }
-  function currentWeekKey() {
-    const p = bdDateParts();
-    const dt = new Date(Date.UTC(p.year, p.month - 1, p.day));
-    const day = (dt.getUTCDay() + 6) % 7;              // Mon=0
-    dt.setUTCDate(dt.getUTCDate() - day + 3);          // Thursday of ISO week
-    const firstThu = new Date(Date.UTC(dt.getUTCFullYear(), 0, 4));
-    const week = 1 + Math.round(((dt - firstThu) / DAY_MS - 3 + ((firstThu.getUTCDay() + 6) % 7)) / 7);
-    return dt.getUTCFullYear() + '-W' + String(week).padStart(2, '0');
-  }
-  function getIelts() {
-    const d = load('edu_ielts', ieltsDefault());
-    if (d.weekKey !== currentWeekKey()) { d.weekKey = currentWeekKey(); d.hours = 0; save('edu_ielts', d); }
-    return d;
-  }
-  const regPill = { 'Registered': 'pill-green', 'Not registered': 'pill-red', 'Pending': 'pill-amber' };
-  function renderIelts() {
-    const d = getIelts();
-    const cd = countdownBig(d.examDate);
-    document.getElementById('ielts-countdown').textContent = cd.txt;
-    document.getElementById('ielts-exam-line').textContent = d.examDate ? prettyDate(d.examDate) : 'No exam date set';
-    document.getElementById('ielts-target').textContent = d.target.toFixed(1);
-    document.getElementById('ielts-hours').textContent = d.hours;
-    document.getElementById('ielts-reg-pill').innerHTML =
-      '<span class="pill ' + (regPill[d.reg] || 'pill-muted') + '">' + esc(d.reg) + '</span>';
-
-    const vals = IELTS_SECTIONS.map(s => d.sections[s].cur);
-    const overall = Math.round((vals.reduce((a, b) => a + b, 0) / 4) * 2) / 2;
-    document.getElementById('ielts-overall').textContent = overall.toFixed(1);
-    const gap = Math.max(0, d.target - overall);
-    document.getElementById('ielts-gap').textContent = gap === 0 ? '✓ Met' : '+' + gap.toFixed(1);
-
-    document.getElementById('ielts-sections').innerHTML = IELTS_SECTIONS.map(s => {
-      const sec = d.sections[s];
-      const pct = Math.min(100, (sec.cur / 9) * 100);
-      const cls = sec.cur >= sec.target ? 'g' : (sec.cur >= sec.target - 1 ? 'a' : '');
-      return '<div class="ielts-card">' +
-        '<h4>' + s + '<span class="band"><b>' + sec.cur.toFixed(1) + '</b> <span class="band-target">/ ' + sec.target.toFixed(1) + '</span></span></h4>' +
-        '<div class="prog-track"><div class="prog-fill ' + cls + '" style="width:' + pct + '%"></div></div>' +
-        '<input class="rng" type="range" min="0" max="9" step="0.5" value="' + sec.cur + '" oninput="setBand(\'' + s + '\',this.value)">' +
-        '<div class="rng-labels"><span>0</span><span>current band</span><span>9</span></div>' +
-        '</div>';
-    }).join('');
-  }
-  function setBand(section, val) {
-    const d = getIelts();
-    d.sections[section].cur = parseFloat(val);
-    save('edu_ielts', d);
-    renderIelts();
-  }
-  function logHours() {
-    const v = prompt('Hours to add this week:', '2');
-    if (v == null) return;
-    const n = parseFloat(v);
-    if (isNaN(n)) return;
-    const d = getIelts();
-    d.hours = Math.max(0, Math.round((d.hours + n) * 2) / 2);
-    save('edu_ielts', d);
-    renderIelts();
-  }
-  function openIeltsSettings() {
-    const d = getIelts();
-    openForm({
-      title: 'IELTS Settings', sub: 'Exam date, target and per-section goals',
-      fields: [
-        { k: 'target', label: 'Overall Target', type: 'number', step: '0.5', min: '0', max: '9', val: d.target },
-        { k: 'examDate', label: 'Exam Date', type: 'date', val: d.examDate },
-        { k: 'reg', label: 'Registration', type: 'select', opts: ['Not registered', 'Pending', 'Registered'], val: d.reg },
-        { k: 'tListening', label: 'Target · Listening', type: 'number', step: '0.5', min: '0', max: '9', val: d.sections.Listening.target },
-        { k: 'tReading', label: 'Target · Reading', type: 'number', step: '0.5', min: '0', max: '9', val: d.sections.Reading.target },
-        { k: 'tWriting', label: 'Target · Writing', type: 'number', step: '0.5', min: '0', max: '9', val: d.sections.Writing.target },
-        { k: 'tSpeaking', label: 'Target · Speaking', type: 'number', step: '0.5', min: '0', max: '9', val: d.sections.Speaking.target }
-      ],
-      onSave: f => {
-        d.target = parseFloat(f.target) || 7.5;
-        d.examDate = f.examDate; d.reg = f.reg;
-        d.sections.Listening.target = parseFloat(f.tListening);
-        d.sections.Reading.target = parseFloat(f.tReading);
-        d.sections.Writing.target = parseFloat(f.tWriting);
-        d.sections.Speaking.target = parseFloat(f.tSpeaking);
-        save('edu_ielts', d);
-        renderIelts();
-      }
-    });
-  }
-
   // ======================= UNIVERSITIES =======================
   const UNI_STATUS = ['Researching', 'Applied', 'Accepted', 'Rejected'];
   const uniPill = { 'Researching': 'pill-blue', 'Applied': 'pill-amber', 'Accepted': 'pill-green', 'Rejected': 'pill-red' };
@@ -1294,13 +1145,11 @@
     return best;
   }
   function renderOverview() {
-    const ielts = getIelts();
     const uni = load('edu_uni', []);
     const docs = load('edu_docs', []);
     const research = load('edu_research', []);
 
     const papers = allPapers();
-    const cdEx = countdownBig(ielts.examDate);
     const submittedSet = ['Submitted', 'Under Review'];
     const papersSubmitted = papers.filter(p => submittedSet.includes(p.status)).length;
     const papersPublished = papers.filter(p => p.status === 'Published').length;
@@ -1309,7 +1158,6 @@
     const docsPct = docs.length ? Math.round((docsReady / docs.length) * 100) : 0;
 
     document.getElementById('ov-stats').innerHTML = [
-      { l: 'IELTS Exam In', v: cdEx.txt, c: 'stat-accent', s: ielts.examDate ? prettyDate(ielts.examDate) : 'no date set', tab: 'ielts' },
       { l: 'Papers Submitted', v: papersSubmitted, c: 'stat-amber', s: 'submitted / under review', tab: 'research' },
       { l: 'Papers Published', v: papersPublished, c: 'stat-violet', s: 'of ' + papers.length + ' total', tab: 'research' },
       { l: 'Uni Applications', v: uniApplied, c: 'stat-green', s: 'of ' + uni.length + ' targets', tab: 'uni' },
@@ -1323,7 +1171,6 @@
       .sort((a, b) => deadlineSerial(a.deadline) - deadlineSerial(b.deadline))[0];
     const nextConf = nextConfDeadline();
     const rows = [
-      { l: 'Next IELTS Exam', ds: ielts.examDate, extra: '' },
       { l: 'Next Scholarship', ds: nextSch ? nextSch.deadline : '', extra: nextSch ? nextSch.name : '' },
       { l: 'Next Conference', ds: nextConf ? nextConf.dl : '', extra: nextConf ? nextConf.name : '' }
     ];
@@ -1340,7 +1187,6 @@
   }
 
   // ---- init ----
-  renderIelts();
   renderUni();
   renderDocs();
   renderResearch();

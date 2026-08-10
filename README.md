@@ -1,6 +1,6 @@
 # Education Dashboard
 
-Personal dashboard for Bangladesh → Masters abroad: conferences, IELTS,
+Personal dashboard for Bangladesh → Masters abroad: conferences,
 universities, documents, research, and scholarships. Data lives in a Google
 Sheet you edit yourself (directly or from the website).
 
@@ -9,7 +9,7 @@ Sheet you edit yourself (directly or from the website).
 ```
 /                     ← FRONTEND (open/host these)
   index.html          landing → redirects to the dashboard
-  conferences.html    main dashboard (Overview / IELTS / Universities / Docs / Research)
+  conferences.html    main dashboard (Overview / Universities / Docs / Research)
   scholarship.html    Scholarship Tracker (reads + edits the Google Sheet)
   assets/
     sheet-api.js      shared frontend ↔ Sheet helper (holds API_URL + token)
