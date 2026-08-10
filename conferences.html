@@ -211,6 +211,9 @@
   .entry-title { font-size: 1rem; font-weight: 600; }
   .entry-meta { font-size: .76rem; color: var(--muted); margin-top: .3rem; line-height: 1.5; display: flex; flex-wrap: wrap; gap: .3rem 1rem; }
   .entry-meta b { color: var(--text); font-weight: 500; }
+  .pending-doc-list { list-style: none; margin: .7rem 0 0; padding-top: .7rem; border-top: 1px dashed var(--border); display: flex; flex-direction: column; gap: .4rem; }
+  .pending-doc-list li { font-size: .78rem; color: var(--muted); padding-left: 1.2rem; position: relative; line-height: 1.4; }
+  .pending-doc-list li::before { content: '☐'; position: absolute; left: 0; color: var(--amber); }
   .entry-notes { font-size: .78rem; color: var(--muted); margin-top: .7rem; padding-top: .7rem; border-top: 1px dashed var(--border); line-height: 1.55; }
   .entry-actions { display: flex; gap: .4rem; flex-shrink: 0; }
   .icon-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); width: 30px; height: 30px; border-radius: 7px; cursor: pointer; font-size: .82rem; transition: all .2s; display: flex; align-items: center; justify-content: center; text-decoration: none; }
@@ -399,6 +402,10 @@
     </div>
   </div>
 
+  <p class="section-label" style="margin:2.2rem 3rem 0">Erasmus programme documents · what's left, per programme</p>
+  <div class="entry-list" id="erasmus-docs-list"></div>
+
+  <p class="section-label" style="margin:2.2rem 3rem 0">Other documents</p>
   <div class="entry-list" id="docs-list"></div>
   <div style="height:2.5rem"></div>
 </section>
@@ -881,6 +888,118 @@
   }
 
   // ======================= DOCUMENTS =======================
+  // Same static checklist + localStorage key convention as scholarship.html —
+  // keep this map in sync with PROGRAM_DOCS there.
+  const PROGRAM_DOCS = {
+    'EMMIE — Erasmus Mundus Master in Impact Entrepreneurship': [
+      'CV in English, Europass format (studies, employment, certificates/awards last 5 years)',
+      'Motivation letter, one page, 1500–2500 characters including spaces, no AI',
+      'All higher education diplomas plus transcript of records in English, officially certified',
+      'English proficiency test (IELTS or TOEFL, not Duolingo) — min B2, C1 recommended, waived if degree fully in English',
+      'Scholarship interest description, one page maximum',
+      'Two recommendation letters (academic and/or professional, not co-workers/family/friends) — I upload them',
+      'Optional: one-page entrepreneurial project description (problem, solution, current stage)',
+      'Passport scan (jpg)',
+      'Photo (jpg)',
+      'Birth certificate in English if available (PDF)',
+      'Residence document if I live outside my nationality country'
+    ],
+    'DCLead (TECMAN) — Digital Communication Leadership': [
+      'Motivation letter, 4000–6000 characters — strict format (Times New Roman/Book Antiqua 12pt, A4, 1.5 spacing, bold title, numbered pages, PDF)',
+      'CV in Europass format',
+      "Bachelor's diploma and transcripts with certified English translation (legalised/Apostille for Salzburg)",
+      'Two recommendation letters (academic or professional) — referees confirm via work email/LinkedIn',
+      'English test proof (IELTS or TOEFL) — needed only at phase-2 shortlist',
+      'Passport, all pages — only if shortlisted for scholarship phase 2'
+    ],
+    'SE4GD — Software Engineers for Green Deal': [
+      'Degree certificate',
+      'Transcript of records',
+      'Motivation letter (scored up to 20 of 100 points)',
+      'CV',
+      'References and evidence of work experience (feeds track record score)',
+      'English test proof: IELTS Academic 6.5 or TOEFL iBT 93'
+    ],
+    'CLIDE — Intercultural Leadership in the Digital Era': [
+      'Online application form, including chosen track',
+      'Motivation letter, around 3000 characters',
+      'CV, Europass format',
+      'Two recommendation letters: one academic, one professional',
+      'Diploma and transcripts with English translation',
+      "Eligibility statement confirming Bachelor qualifies for master's entry in Bangladesh",
+      'Video business card, about 2 minutes',
+      'English proficiency proof'
+    ],
+    'EMILDAI (Computing Stream) — Law, Data and Artificial Intelligence': [
+      'Online application form with personal and academic background',
+      "Bachelor's degree certificate and transcripts in English",
+      'Motivation letter tailored to law, data and AI',
+      'CV',
+      'Referee contact details — referees provide recommendation letters (plan for 2)',
+      'English proficiency proof',
+      'Additional language certificate if required for chosen track'
+    ],
+    'EDISS — Engineering of Data-intensive Intelligent Software Systems': [
+      'Degree certificate, certified, plus English translation',
+      'Transcript of records, certified, plus English translation — state CGPA, max CGPA and grading scale',
+      'Diploma supplement if available',
+      'English test: TOEFL iBT 93 or IELTS Academic 6.5, no band below 6 (home editions not accepted)',
+      'Passport copy',
+      'CV using the official EDISS template (5 sections incl. work/entrepreneurial experience, up to 4 entries)',
+      'Two academic recommendation letters only, signed, letterhead/stamp preferred',
+      'Motivation VIDEO, 2 minutes ± 30 seconds, no written letter',
+      'Certificates proving every experience listed in the CV'
+    ],
+    'DEAI — Data Engineering and Artificial Intelligence': [
+      'Online application form (portal templates — do not email documents)',
+      'CV in English, PDF',
+      'Motivation or cover letter in English',
+      "Certified English translation of Bachelor's degree",
+      'Transcript or academic results entered in the provided Excel template',
+      'Reference letters, uploaded by referees using the provided template',
+      'English proficiency proof',
+      'Passport'
+    ]
+  };
+  function docsKey(name) { return 'sch_docs::' + name; }
+  function getDocChecks(name, count) {
+    let arr = [];
+    try { arr = JSON.parse(localStorage.getItem(docsKey(name)) || '[]'); } catch (e) { arr = []; }
+    if (!Array.isArray(arr)) arr = [];
+    while (arr.length < count) arr.push(false);
+    return arr;
+  }
+  async function renderErasmusDocs() {
+    const box = document.getElementById('erasmus-docs-list');
+    if (!box) return;
+    let rows = [];
+    try {
+      if (window.SHEET && SHEET.configured()) rows = await SHEET.get('Untitled');
+    } catch (e) { /* fall through to empty */ }
+    const progs = rows.filter(r => PROGRAM_DOCS[r.name]);
+    if (!progs.length) {
+      box.innerHTML = emptyState('📋', 'No Erasmus programmes tracked yet — add them on the Scholarships page.');
+      return;
+    }
+    const summarized = progs.map(r => {
+      const docs = PROGRAM_DOCS[r.name];
+      const checks = getDocChecks(r.name, docs.length);
+      const pending = docs.filter((d, idx) => !checks[idx]);
+      return { name: r.name, pending, done: docs.length - pending.length, total: docs.length };
+    }).sort((a, b) => b.pending.length - a.pending.length);
+    box.innerHTML = summarized.map(p =>
+      '<div class="entry"><div class="entry-top"><div>' +
+        '<div class="entry-title">' + esc(p.name) + '</div>' +
+        '<div class="entry-meta"><span>' + p.done + ' / ' + p.total + ' ready</span></div>' +
+      '</div>' +
+      '<span class="pill ' + (p.pending.length === 0 ? 'pill-green' : 'pill-amber') + '">' +
+        (p.pending.length === 0 ? '✓ Complete' : p.pending.length + ' pending') + '</span>' +
+      '</div>' +
+      (p.pending.length ? '<ul class="pending-doc-list">' + p.pending.map(d => '<li>' + esc(d) + '</li>').join('') + '</ul>' : '') +
+      '</div>'
+    ).join('');
+  }
+
   const DOC_STATUS = ['Missing', 'Pending', 'Ready', 'Notarized'];
   const docPill = { 'Missing': 'pill-red', 'Pending': 'pill-amber', 'Ready': 'pill-green', 'Notarized': 'pill-violet' };
   function renderDocs() {
@@ -1189,6 +1308,7 @@
   // ---- init ----
   renderUni();
   renderDocs();
+  renderErasmusDocs();
   renderResearch();
   renderOverview();
   (function restoreTab() {

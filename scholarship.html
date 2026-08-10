@@ -111,6 +111,18 @@
   .card.soon { border-color: rgba(245,166,35,.4); }
   .card.closed { opacity: .6; }
 
+  /* ===== DOCS CHECKLIST ===== */
+  .doc-progress { font-size: .68rem; font-family: 'Space Mono', monospace; color: var(--muted); margin-bottom: .9rem; }
+  .doc-progress.done { color: var(--green); }
+  .doc-progress-track { height: 4px; background: var(--surface2); border-radius: 3px; margin-top: .3rem; overflow: hidden; }
+  .doc-progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .2s; }
+  .doc-progress.done .doc-progress-fill { background: var(--green); }
+  .doc-checklist { display: flex; flex-direction: column; gap: .1rem; }
+  .doc-check-item { display: flex; align-items: flex-start; gap: .55rem; padding: .45rem .3rem; border-radius: 8px; cursor: pointer; font-size: .82rem; line-height: 1.45; color: var(--text); transition: background .15s; }
+  .doc-check-item:hover { background: var(--surface2); }
+  .doc-check-item input[type=checkbox] { margin-top: .2rem; accent-color: var(--accent); width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
+  .doc-check-item.checked span { color: var(--muted); text-decoration: line-through; }
+
   .empty { padding: 4rem 1rem; text-align: center; color: var(--muted); font-size: .9rem; grid-column: 1 / -1; }
   .empty span { font-size: 2.2rem; display: block; margin-bottom: .7rem; opacity: .5; }
 
@@ -457,6 +469,102 @@
     }
   ];
 
+  /* ============================================================
+     PROGRAM_DOCS — the actual document checklist per programme,
+     keyed by exact scholarship "name". Static (doesn't live in the
+     Sheet); only the checked/unchecked state is persisted, in
+     localStorage, shared with conferences.html via the same key.
+     ============================================================ */
+  const PROGRAM_DOCS = {
+    'EMMIE — Erasmus Mundus Master in Impact Entrepreneurship': [
+      'CV in English, Europass format (studies, employment, certificates/awards last 5 years)',
+      'Motivation letter, one page, 1500–2500 characters including spaces, no AI',
+      'All higher education diplomas plus transcript of records in English, officially certified',
+      'English proficiency test (IELTS or TOEFL, not Duolingo) — min B2, C1 recommended, waived if degree fully in English',
+      'Scholarship interest description, one page maximum',
+      'Two recommendation letters (academic and/or professional, not co-workers/family/friends) — I upload them',
+      'Optional: one-page entrepreneurial project description (problem, solution, current stage)',
+      'Passport scan (jpg)',
+      'Photo (jpg)',
+      'Birth certificate in English if available (PDF)',
+      'Residence document if I live outside my nationality country'
+    ],
+    'DCLead (TECMAN) — Digital Communication Leadership': [
+      'Motivation letter, 4000–6000 characters — strict format (Times New Roman/Book Antiqua 12pt, A4, 1.5 spacing, bold title, numbered pages, PDF)',
+      'CV in Europass format',
+      "Bachelor's diploma and transcripts with certified English translation (legalised/Apostille for Salzburg)",
+      'Two recommendation letters (academic or professional) — referees confirm via work email/LinkedIn',
+      'English test proof (IELTS or TOEFL) — needed only at phase-2 shortlist',
+      'Passport, all pages — only if shortlisted for scholarship phase 2'
+    ],
+    'SE4GD — Software Engineers for Green Deal': [
+      'Degree certificate',
+      'Transcript of records',
+      'Motivation letter (scored up to 20 of 100 points)',
+      'CV',
+      'References and evidence of work experience (feeds track record score)',
+      'English test proof: IELTS Academic 6.5 or TOEFL iBT 93'
+    ],
+    'CLIDE — Intercultural Leadership in the Digital Era': [
+      'Online application form, including chosen track',
+      'Motivation letter, around 3000 characters',
+      'CV, Europass format',
+      'Two recommendation letters: one academic, one professional',
+      'Diploma and transcripts with English translation',
+      "Eligibility statement confirming Bachelor qualifies for master's entry in Bangladesh",
+      'Video business card, about 2 minutes',
+      'English proficiency proof'
+    ],
+    'EMILDAI (Computing Stream) — Law, Data and Artificial Intelligence': [
+      'Online application form with personal and academic background',
+      "Bachelor's degree certificate and transcripts in English",
+      'Motivation letter tailored to law, data and AI',
+      'CV',
+      'Referee contact details — referees provide recommendation letters (plan for 2)',
+      'English proficiency proof',
+      'Additional language certificate if required for chosen track'
+    ],
+    'EDISS — Engineering of Data-intensive Intelligent Software Systems': [
+      'Degree certificate, certified, plus English translation',
+      'Transcript of records, certified, plus English translation — state CGPA, max CGPA and grading scale',
+      'Diploma supplement if available',
+      'English test: TOEFL iBT 93 or IELTS Academic 6.5, no band below 6 (home editions not accepted)',
+      'Passport copy',
+      'CV using the official EDISS template (5 sections incl. work/entrepreneurial experience, up to 4 entries)',
+      'Two academic recommendation letters only, signed, letterhead/stamp preferred',
+      'Motivation VIDEO, 2 minutes ± 30 seconds, no written letter',
+      'Certificates proving every experience listed in the CV'
+    ],
+    'DEAI — Data Engineering and Artificial Intelligence': [
+      'Online application form (portal templates — do not email documents)',
+      'CV in English, PDF',
+      'Motivation or cover letter in English',
+      "Certified English translation of Bachelor's degree",
+      'Transcript or academic results entered in the provided Excel template',
+      'Reference letters, uploaded by referees using the provided template',
+      'English proficiency proof',
+      'Passport'
+    ]
+  };
+
+  function docsKey(name) { return 'sch_docs::' + name; }
+  function getDocChecks(name, count) {
+    let arr = [];
+    try { arr = JSON.parse(localStorage.getItem(docsKey(name)) || '[]'); } catch (e) { arr = []; }
+    if (!Array.isArray(arr)) arr = [];
+    while (arr.length < count) arr.push(false);
+    return arr;
+  }
+  function toggleDocCheck(i, idx) {
+    const s = SCHOLARSHIPS[i];
+    const docs = PROGRAM_DOCS[s.name] || [];
+    const arr = getDocChecks(s.name, docs.length);
+    arr[idx] = !arr[idx];
+    localStorage.setItem(docsKey(s.name), JSON.stringify(arr));
+    openModal(i);
+    render();
+  }
+
   /* ============================================================ */
   const DAY = 86400000;
   const SOON_DAYS = 45;
@@ -573,6 +681,9 @@
     const cd = countdownParts(s.deadline);
     const closed = daysLeft(s.deadline) < 0;
     const soon = !closed && daysLeft(s.deadline) <= SOON_DAYS;
+    const docs = PROGRAM_DOCS[s.name] || [];
+    const docChecks = docs.length ? getDocChecks(s.name, docs.length) : [];
+    const docsDone = docChecks.filter(Boolean).length;
     return '<div class="card' + (soon ? ' soon' : '') + (closed ? ' closed' : '') + '" onclick="openModal(' + i + ')">' +
       '<div class="card-top"><div>' +
         '<div class="sch-name">' + esc(s.name) + '</div>' +
@@ -582,6 +693,8 @@
         '<div><div class="meta-label">Degree</div><div class="meta-value">' + esc(s.degree) + '</div></div>' +
         '<div><div class="meta-label">Deadline</div><div class="meta-value">' + prettyDate(s.deadline) + '</div></div>' +
       '</div>' +
+      (docs.length ? '<div class="doc-progress' + (docsDone === docs.length ? ' done' : '') + '">📋 Documents ' + docsDone + '/' + docs.length +
+        '<div class="doc-progress-track"><div class="doc-progress-fill" style="width:' + Math.round(docsDone / docs.length * 100) + '%"></div></div></div>' : '') +
       '<div class="card-foot">' +
         '<div class="countdown"><span class="countdown-days ' + cd.cls + '">' + cd.txt + '</span>' +
           (closed ? '' : '<span class="countdown-lbl">left</span>') + '</div>' +
@@ -611,6 +724,20 @@
        activeFilter === 'country' && activeCountry ? ' · ' + activeCountry : '');
   }
 
+  function docsChecklistHTML(s, i) {
+    const docs = PROGRAM_DOCS[s.name] || [];
+    if (!docs.length) return '';
+    const checks = getDocChecks(s.name, docs.length);
+    const done = checks.filter(Boolean).length;
+    return '<div class="modal-section"><h4>Documents Checklist · ' + done + '/' + docs.length + '</h4>' +
+      '<div class="doc-checklist">' + docs.map((d, idx) =>
+        '<label class="doc-check-item' + (checks[idx] ? ' checked' : '') + '">' +
+          '<input type="checkbox" ' + (checks[idx] ? 'checked' : '') + ' onchange="toggleDocCheck(' + i + ',' + idx + ')">' +
+          '<span>' + esc(d) + '</span>' +
+        '</label>'
+      ).join('') + '</div></div>';
+  }
+
   function openModal(i) {
     const s = SCHOLARSHIPS[i];
     document.getElementById('m-name').textContent = s.name;
@@ -630,6 +757,7 @@
       (s.summary ? '<div class="modal-section"><h4>Overview</h4><p>' + esc(s.summary) + '</p></div>' : '') +
       (s.benefits && s.benefits.length ? '<div class="modal-section"><h4>Benefits</h4><ul>' + s.benefits.map(b => '<li>' + esc(b) + '</li>').join('') + '</ul></div>' : '') +
       (s.eligibility && s.eligibility.length ? '<div class="modal-section"><h4>Eligibility</h4><ul>' + s.eligibility.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul></div>' : '') +
+      docsChecklistHTML(s, i) +
       (s.link ? '<a class="modal-link" href="' + esc(s.link) + '" target="_blank" rel="noopener">Official website ↗</a>' : '') +
       (ADMIN ? '<a class="modal-link" style="background:var(--surface2);color:var(--accent);margin-left:.6rem" href="javascript:void(0)" onclick="closeModal();openEdit(\'' + s.id + '\')">Edit ✎</a>' : '');
     document.getElementById('modal').classList.add('open');
