@@ -1,319 +1,332 @@
 /* ============================================================
-   outreach-ui.js — renders the university + professor tracker
-   inside a country panel. Data lives in OUTREACH (outreach.js);
-   this file only draws it and wires the forms.
+   outreach-ui.js — university cards, each holding an editable
+   professor grid, each professor row expanding into a dated
+   email-update log.
 
-   Loaded at the end of <body> so the dashboard's generic modal
-   (openForm) and helpers are already defined.
+   Grid cells are edited in place (type straight in, saves as you
+   go). Universities and updates use the dashboard's shared modal.
    ============================================================ */
 window.OUTREACH_UI = (function () {
   'use strict';
 
-  var expanded = {};   // uniId -> bool
+  var country = null;
+  var host = null;
   var query = '';
-  var mountedCountry = null;
+  var openUni = {};    // uniId  -> false to collapse (default open)
+  var openProf = {};   // profId -> true to show the update log
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  function attr(s) { return esc(s).replace(/\n/g, ' '); }
-  function statusClass(s) { return 'os-' + String(s || '').toLowerCase().replace(/\s+/g, '-'); }
-  function safeUrl(u) {
+  function slug(s) { return 'st-' + String(s || '').toLowerCase().replace(/\s+/g, '-'); }
+  function href(u) {
     u = String(u || '').trim();
-    if (!u) return '';
-    return /^https?:\/\//i.test(u) ? u : 'https://' + u;
+    return !u ? '' : (/^https?:\/\//i.test(u) ? u : 'https://' + u);
   }
 
-  /* ---------- sync notice ---------- */
-  function syncHTML() {
-    if (OUTREACH.syncState() !== 'no-tab') return '';
-    return '<div class="ov-sync">' +
-      '<b>Saved on this device only.</b> The Google Sheet backend is running an older ' +
-      '<code>Code.gs</code> that cannot create the <code>Universities</code> / <code>Professors</code> tabs. ' +
-      'Redeploy <code>backend/Code.gs</code> (Extensions → Apps Script → paste → Deploy), then hit retry — ' +
-      'everything already entered will be pushed up.' +
-      '<button class="mini-btn" data-act="retry-sheet">Retry sync</button>' +
-      '</div>';
-  }
+  var GRID = [
+    { k: 'name', label: 'Professor Name', w: 170 },
+    { k: 'email', label: 'Email', w: 200, type: 'email' },
+    { k: 'mobile', label: 'Mobile', w: 140 },
+    { k: 'subject', label: 'Subject', w: 160 }
+  ];
 
-  /* ---------- stats strip ---------- */
-  function statsHTML(country) {
-    var s = OUTREACH.stats(country);
-    var tiles = [
-      { l: 'Universities', v: s.unis, c: '' },
-      { l: 'Professors', v: s.profs, c: '' },
-      { l: 'Contacted', v: s.contacted, c: 'ov-accent' },
-      { l: 'Replied', v: s.replied, c: 'ov-green' },
-      { l: 'Reply rate', v: s.replyRate + '%', c: 'ov-green' },
-      { l: 'Follow-up due', v: s.followUp, c: s.followUp ? 'ov-amber' : '' }
-    ];
-    return '<div class="ov-strip">' + tiles.map(function (t) {
-      return '<div class="ov-stat"><b class="' + t.c + '">' + t.v + '</b><span>' + t.l + '</span></div>';
-    }).join('') + '</div>';
-  }
-
-  /* ---------- follow-up radar ---------- */
-  function radarHTML(country) {
-    var due = OUTREACH.profsForCountry(country).filter(OUTREACH.needsFollowUp);
-    if (!due.length) return '';
-    return '<div class="ov-radar"><h5>⏰ Follow-up due · no reply after ' + OUTREACH.FOLLOWUP_DAYS + ' days</h5>' +
-      due.map(function (p) {
-        var d = OUTREACH.daysSince(p.emailedOn);
-        return '<div class="ov-radar-row">' +
-          '<span class="ov-radar-name">' + esc(p.name) + '<em> · ' + esc(p.uniName) + '</em></span>' +
-          '<span class="ov-radar-age">' + d + ' days ago</span>' +
-          '<button class="mini-btn" data-act="respond" data-id="' + p.id + '">Log reply</button>' +
-          (p.email ? '<a class="mini-btn" href="mailto:' + attr(p.email) + '?subject=' + encodeURIComponent('Following up — prospective MS applicant') + '">Nudge ✉</a>' : '') +
-          '</div>';
-      }).join('') + '</div>';
-  }
-
-  /* ---------- professor row ---------- */
-  function profHTML(p) {
-    var responses = p.responseList || [];
-    var flag = OUTREACH.needsFollowUp(p);
-    return '<div class="ov-prof' + (flag ? ' is-due' : '') + '">' +
-      '<div class="ov-prof-head">' +
-        '<div class="ov-prof-id">' +
-          '<span class="ov-prof-name">' + esc(p.name) + (p.title ? ' <em>' + esc(p.title) + '</em>' : '') + '</span>' +
-          (p.research ? '<span class="ov-prof-research">' + esc(p.research) + '</span>' : '') +
-        '</div>' +
-        '<span class="ov-pill ' + statusClass(p.status) + '">' + esc(p.status) + '</span>' +
-      '</div>' +
-      '<div class="ov-prof-contact">' +
-        (p.email ? '<span class="ov-chip">✉ ' + esc(p.email) +
-          '<button class="ov-icon" data-act="copy" data-val="' + attr(p.email) + '" title="Copy email">⧉</button>' +
-          '<a class="ov-icon" href="mailto:' + attr(p.email) + '" title="Send email">↗</a></span>' : '') +
-        (p.mobile ? '<span class="ov-chip">☎ ' + esc(p.mobile) +
-          '<button class="ov-icon" data-act="copy" data-val="' + attr(p.mobile) + '" title="Copy number">⧉</button></span>' : '') +
-        (p.emailedOn ? '<span class="ov-chip muted">Emailed ' + esc(p.emailedOn) + '</span>' : '') +
-      '</div>' +
-      (responses.length
-        ? '<ol class="ov-resp">' + responses.map(function (r, i) {
-            return '<li><span class="ov-resp-n">Response ' + (i + 1) + '</span>' +
-              '<span class="ov-resp-d">' + esc(r.date) + '</span>' +
-              '<span class="ov-resp-t">' + esc(r.text) + '</span>' +
-              '<button class="ov-icon del" data-act="del-resp" data-id="' + p.id + '" data-i="' + i + '" title="Remove">×</button></li>';
-          }).join('') + '</ol>'
-        : '') +
-      (p.notes ? '<div class="ov-prof-notes">' + esc(p.notes) + '</div>' : '') +
-      '<div class="ov-prof-actions">' +
-        '<button class="mini-btn" data-act="respond" data-id="' + p.id + '">+ Response</button>' +
-        (p.status === 'Not contacted' ? '<button class="mini-btn" data-act="emailed" data-id="' + p.id + '">Mark emailed</button>' : '') +
-        '<button class="mini-btn" data-act="edit-prof" data-id="' + p.id + '">Edit</button>' +
-        '<button class="mini-btn del" data-act="del-prof" data-id="' + p.id + '">Delete</button>' +
-      '</div>' +
-    '</div>';
-  }
-
-  /* ---------- university card ---------- */
-  function uniHTML(u, matchedProfs) {
-    var open = expanded[u.id] !== false;   // default open
-    var site = safeUrl(u.website);
-    return '<div class="ov-uni">' +
-      '<div class="ov-uni-head" data-act="toggle" data-id="' + u.id + '">' +
-        '<div>' +
-          '<div class="ov-uni-name">' + esc(u.name) +
-            '<span class="ov-count">' + matchedProfs.length + ' prof' + (matchedProfs.length === 1 ? '' : 's') + '</span></div>' +
-          '<div class="ov-uni-meta">' +
-            (site ? '<a href="' + attr(site) + '" target="_blank" rel="noopener" data-stop="1">🌐 Website</a>' : '') +
-            (u.course ? '<span>🎓 ' + esc(u.course) + '</span>' : '') +
-            (u.location ? '<span>📍 ' + esc(u.location) + '</span>' : '') +
-          '</div>' +
-        '</div>' +
-        '<div class="ov-uni-right">' +
-          '<span class="ov-pill ' + statusClass(u.status) + '">' + esc(u.status) + '</span>' +
-          '<button class="ov-icon" data-act="edit-uni" data-id="' + u.id + '" title="Edit university">✎</button>' +
-          '<button class="ov-icon del" data-act="del-uni" data-id="' + u.id + '" title="Delete university">🗑</button>' +
-          '<span class="ov-caret' + (open ? ' open' : '') + '">▾</span>' +
-        '</div>' +
-      '</div>' +
-      (open
-        ? '<div class="ov-uni-body">' +
-            (u.notes ? '<div class="ov-uni-notes">' + esc(u.notes) + '</div>' : '') +
-            (matchedProfs.length ? matchedProfs.map(profHTML).join('')
-              : '<div class="ov-empty">No professors logged yet for this university.</div>') +
-            '<button class="btn btn-ghost btn-sm" data-act="add-prof" data-id="' + u.id + '">+ Add professor</button>' +
-          '</div>'
-        : '') +
-    '</div>';
-  }
-
-  /* ---------- main render ---------- */
-  function render(host, country) {
+  /* ---------- render ---------- */
+  function render(mount, countryId) {
+    if (mount) host = mount;
+    if (countryId) country = countryId;
     if (!host) return;
-    mountedCountry = country;
-    var all = OUTREACH.unisFor(country);
-    var q = query.trim().toLowerCase();
 
+    var q = query.trim().toLowerCase();
+    var all = OUTREACH.unisFor(country);
     var shown = all.map(function (u) {
       var kids = OUTREACH.profsFor(u.id);
       if (!q) return { u: u, kids: kids };
-      var uniHit = (u.name + ' ' + u.course + ' ' + u.location + ' ' + u.website).toLowerCase().indexOf(q) !== -1;
-      var hitKids = kids.filter(function (p) {
-        return (p.name + ' ' + p.email + ' ' + p.research + ' ' + p.title + ' ' + p.notes).toLowerCase().indexOf(q) !== -1;
-      });
+      var uniHit = (u.name + ' ' + u.location + ' ' + u.website).toLowerCase().indexOf(q) !== -1;
       if (uniHit) return { u: u, kids: kids };
-      return hitKids.length ? { u: u, kids: hitKids } : null;
+      var hit = kids.filter(function (p) {
+        return (p.name + ' ' + p.email + ' ' + p.subject + ' ' + p.status + ' ' + p.updates).toLowerCase().indexOf(q) !== -1;
+      });
+      return hit.length ? { u: u, kids: hit } : null;
     }).filter(Boolean);
 
+    var s = OUTREACH.stats(country);
+
     host.innerHTML =
-      '<div class="ov-wrap">' +
-        '<div class="ov-bar">' +
-          '<input class="ov-search" id="ov-search" type="text" placeholder="Search university, professor, email, research area…" value="' + attr(query) + '">' +
+      '<div class="ot">' +
+        '<div class="ot-bar">' +
+          '<input class="ot-search" id="ot-search" placeholder="Search university, professor, subject, update…" value="' + esc(query) + '">' +
           '<button class="btn" data-act="add-uni">+ Add University</button>' +
-          '<button class="btn btn-ghost" data-act="export">⭳ CSV</button>' +
+          '<button class="btn btn-ghost" data-act="csv">⭳ CSV</button>' +
         '</div>' +
-        syncHTML() +
-        statsHTML(country) +
-        radarHTML(country) +
-        (shown.length
-          ? shown.map(function (r) { return uniHTML(r.u, r.kids); }).join('')
-          : '<div class="ov-empty big">' + (all.length
+        '<div class="ot-stats">' +
+          statTile(s.unis, 'Universities') + statTile(s.profs, 'Professors') +
+          statTile(s.contacted, 'Contacted', 'a') + statTile(s.talking, 'In talks', 'v') +
+          statTile(s.replied, 'Replied', 'g') + statTile(s.replyRate + '%', 'Reply rate', 'g') +
+        '</div>' +
+        (OUTREACH.syncState() === 'no-tab'
+          ? '<div class="ot-warn">Saving on this device only — the Sheet backend needs ' +
+            '<code>backend/Code.gs</code> redeployed so it can create the <code>Universities</code> and ' +
+            '<code>Professors</code> tabs. <button class="mini-btn" data-act="retry">Retry sync</button></div>'
+          : '') +
+        (shown.length ? shown.map(function (r) { return uniCard(r.u, r.kids); }).join('')
+          : '<div class="ot-blank">' + (all.length
               ? 'Nothing matches “' + esc(query) + '”.'
-              : 'No universities yet. Add one, then log the professors you contact there.') + '</div>') +
+              : 'No universities yet. Click “+ Add University” to start.') + '</div>') +
       '</div>';
 
-    var box = host.querySelector('.ov-wrap');
-    box.addEventListener('click', onClick);
-    var s = host.querySelector('#ov-search');
-    s.addEventListener('input', function (e) {
+    wire();
+  }
+  function statTile(v, l, tone) {
+    return '<div class="ot-stat"><b class="' + (tone ? 'tone-' + tone : '') + '">' + v + '</b><span>' + l + '</span></div>';
+  }
+
+  function uniCard(u, kids) {
+    var open = openUni[u.id] !== false;
+    var site = href(u.website);
+    return '<div class="ot-uni">' +
+      '<div class="ot-uni-head">' +
+        '<div class="ot-uni-main" data-act="toggle-uni" data-id="' + u.id + '">' +
+          '<div class="ot-uni-name">' + esc(u.name) +
+            '<span class="ot-badge">' + kids.length + ' prof' + (kids.length === 1 ? '' : 's') + '</span></div>' +
+          '<div class="ot-uni-meta">' +
+            (u.location ? '<span>📍 ' + esc(u.location) + '</span>' : '') +
+            (site ? '<a href="' + esc(site) + '" target="_blank" rel="noopener" data-stop="1">🌐 ' + esc(u.website) + '</a>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="ot-uni-side">' +
+          '<span class="ot-pill ' + slug(u.status) + '">' + esc(u.status) + '</span>' +
+          '<button class="ot-ico" data-act="edit-uni" data-id="' + u.id + '" title="Edit university">✎</button>' +
+          '<button class="ot-ico del" data-act="del-uni" data-id="' + u.id + '" title="Delete university">🗑</button>' +
+          '<span class="ot-caret' + (open ? ' open' : '') + '" data-act="toggle-uni" data-id="' + u.id + '">▾</span>' +
+        '</div>' +
+      '</div>' +
+      (open ? '<div class="ot-uni-body">' +
+        (u.notes ? '<div class="ot-uni-notes">' + esc(u.notes) + '</div>' : '') +
+        profGrid(u, kids) +
+        '<button class="btn btn-ghost btn-sm" data-act="add-prof" data-id="' + u.id + '">+ Add professor</button>' +
+      '</div>' : '') +
+    '</div>';
+  }
+
+  function profGrid(u, kids) {
+    if (!kids.length) return '<div class="ot-nogrid">No professors yet for this university.</div>';
+    return '<div class="ot-scroll"><table class="ot-grid"><thead><tr>' +
+      GRID.map(function (c) { return '<th style="min-width:' + c.w + 'px">' + c.label + '</th>'; }).join('') +
+      '<th style="min-width:130px">Status</th><th style="min-width:96px">Updates</th><th class="ot-act"></th>' +
+      '</tr></thead><tbody>' +
+      kids.map(function (p) { return profRow(p); }).join('') +
+      '</tbody></table></div>';
+  }
+
+  function profRow(p) {
+    var n = (p.updateList || []).length;
+    var open = !!openProf[p.id];
+    var cells = GRID.map(function (c) {
+      var v = p[c.k] || '';
+      var go = '';
+      if (c.type === 'email' && v) go = '<a class="ot-go" href="mailto:' + esc(v) + '" title="Send email" tabindex="-1">✉</a>';
+      return '<td class="' + (go ? 'has-go' : '') + '">' +
+        '<input class="ot-cell" data-k="' + c.k + '" value="' + esc(v) + '">' + go + '</td>';
+    }).join('');
+
+    var row = '<tr data-pid="' + p.id + '">' + cells +
+      '<td><select class="ot-cell ot-sel ' + slug(p.status) + '" data-k="status">' +
+        OUTREACH.PROF_STATUS.map(function (o) {
+          return '<option value="' + esc(o) + '"' + (o === p.status ? ' selected' : '') + '>' + esc(o) + '</option>';
+        }).join('') + '</select></td>' +
+      '<td><button class="ot-updbtn' + (open ? ' open' : '') + '" data-act="toggle-prof" data-id="' + p.id + '">' +
+        n + ' update' + (n === 1 ? '' : 's') + ' <span class="ot-caret' + (open ? ' open' : '') + '">▾</span></button></td>' +
+      '<td class="ot-act">' +
+        '<button class="ot-ico del" data-act="del-prof" data-id="' + p.id + '" title="Delete professor">×</button>' +
+      '</td></tr>';
+
+    if (!open) return row;
+
+    var log = (p.updateList || []).map(function (up, i) {
+      return '<li><span class="ot-updn">' + (i + 1) + '</span>' +
+        '<span class="ot-updd">' + esc(up.date) + '</span>' +
+        '<span class="ot-updt">' + esc(up.text) + '</span>' +
+        '<button class="ot-ico" data-act="edit-upd" data-id="' + p.id + '" data-i="' + i + '" title="Edit">✎</button>' +
+        '<button class="ot-ico del" data-act="del-upd" data-id="' + p.id + '" data-i="' + i + '" title="Delete">×</button></li>';
+    }).join('');
+
+    return row + '<tr class="ot-logrow"><td colspan="' + (GRID.length + 3) + '">' +
+      '<div class="ot-log">' +
+        (log ? '<ol class="ot-updlist">' + log + '</ol>' : '<div class="ot-noupd">No email updates logged yet.</div>') +
+        '<button class="btn btn-ghost btn-sm" data-act="add-upd" data-id="' + p.id + '">+ Add update</button>' +
+      '</div></td></tr>';
+  }
+
+  /* ---------- wiring ---------- */
+  function wire() {
+    var box = host.querySelector('.ot');
+
+    var search = host.querySelector('#ot-search');
+    search.addEventListener('input', function (e) {
       query = e.target.value;
       var pos = e.target.selectionStart;
-      render(host, country);
-      var ns = host.querySelector('#ov-search');
+      render();
+      var ns = host.querySelector('#ot-search');
       if (ns) { ns.focus(); try { ns.setSelectionRange(pos, pos); } catch (err) {} }
     });
+
+    box.addEventListener('click', onClick);
+    box.addEventListener('input', onCellEdit);
+    box.addEventListener('change', onCellEdit);
+    box.addEventListener('keydown', onGridKey);
   }
 
-  function rerender() {
-    var host = document.getElementById('outreach-host');
-    if (host && mountedCountry) render(host, mountedCountry);
-  }
-
-  /* ---------- interactions ---------- */
   function onClick(e) {
-    var stop = e.target.closest('[data-stop]');
-    if (stop) { e.stopPropagation(); return; }
+    if (e.target.closest('[data-stop]')) { e.stopPropagation(); return; }
     var el = e.target.closest('[data-act]');
     if (!el) return;
     var act = el.dataset.act, id = el.dataset.id;
 
-    if (act === 'toggle') { expanded[id] = expanded[id] === false; rerender(); return; }
-    e.stopPropagation();
-
+    if (act === 'toggle-uni') { openUni[id] = openUni[id] === false; return render(); }
+    if (act === 'toggle-prof') { openProf[id] = !openProf[id]; return render(); }
     if (act === 'add-uni') return uniForm(null);
     if (act === 'edit-uni') return uniForm(id);
     if (act === 'del-uni') {
       var u = OUTREACH.uniById(id);
       var n = OUTREACH.profsFor(id).length;
-      if (!confirm('Delete "' + (u ? u.name : id) + '"' + (n ? ' and its ' + n + ' professor record(s)' : '') + '?')) return;
-      OUTREACH.removeUni(id); return;
+      if (!confirm('Delete "' + (u ? u.name : id) + '"' + (n ? ' and its ' + n + ' professor row(s)' : '') + '?')) return;
+      OUTREACH.removeUni(id); return render();
     }
-    if (act === 'add-prof') return profForm(null, id);
-    if (act === 'edit-prof') return profForm(id);
-    if (act === 'del-prof') {
-      var p = OUTREACH.profById(id);
-      if (!confirm('Delete professor "' + (p ? p.name : id) + '"?')) return;
-      OUTREACH.removeProf(id); return;
-    }
-    if (act === 'emailed') { OUTREACH.markEmailed(id); if (window.toast) toast('Marked as emailed today'); return; }
-    if (act === 'respond') return responseForm(id);
-    if (act === 'del-resp') { OUTREACH.removeResponse(id, parseInt(el.dataset.i, 10)); return; }
-    if (act === 'export') { OUTREACH.exportCsv(mountedCountry); if (window.toast) toast('CSV exported'); return; }
-    if (act === 'retry-sheet') {
-      if (window.toast) toast('Retrying Sheet sync…');
-      OUTREACH.retrySheet().then(function (ok) {
-        if (window.toast) toast(ok ? 'Synced to Google Sheet' : 'Still unavailable — backend needs redeploying', ok ? 'ok' : 'warn');
-        rerender();
-      });
+    if (act === 'add-prof') {
+      var p = OUTREACH.addProf(id);
+      render();
+      var inp = host.querySelector('tr[data-pid="' + p.id + '"] .ot-cell');
+      if (inp) inp.focus();
       return;
     }
-    if (act === 'copy') {
-      var v = el.dataset.val || '';
-      if (navigator.clipboard) navigator.clipboard.writeText(v).then(function () {
-        if (window.toast) toast('Copied ' + v);
-      }).catch(function () {});
+    if (act === 'del-prof') {
+      var pr = OUTREACH.profById(id);
+      if (!confirm('Delete ' + ((pr && pr.name) || 'this professor') + '?')) return;
+      OUTREACH.removeProf(id); return render();
+    }
+    if (act === 'add-upd') return updForm(id, null);
+    if (act === 'edit-upd') return updForm(id, parseInt(el.dataset.i, 10));
+    if (act === 'del-upd') {
+      if (!confirm('Delete this update?')) return;
+      OUTREACH.removeUpdate(id, parseInt(el.dataset.i, 10)); return render();
+    }
+    if (act === 'csv') { OUTREACH.exportCsv(country); if (window.toast) toast('CSV exported'); return; }
+    if (act === 'retry') {
+      if (window.toast) toast('Retrying Sheet sync…');
+      OUTREACH.retrySheet().then(function (ok) {
+        if (window.toast) toast(ok ? 'Synced to Google Sheet' : 'Backend still needs redeploying', ok ? 'ok' : 'warn');
+        render();
+      });
       return;
     }
   }
 
-  /* ---------- forms (reuse the dashboard's generic modal) ---------- */
+  /* inline grid edit — save without re-rendering so the caret stays put */
+  function onCellEdit(e) {
+    var el = e.target;
+    if (!el.classList || !el.classList.contains('ot-cell')) return;
+    var tr = el.closest('tr[data-pid]');
+    if (!tr) return;
+    OUTREACH.setProfCell(tr.dataset.pid, el.dataset.k, el.value);
+    if (el.dataset.k === 'status') {
+      el.className = 'ot-cell ot-sel ' + slug(el.value);
+      refreshStats();
+    }
+  }
+  function refreshStats() {
+    var s = OUTREACH.stats(country);
+    var box = host.querySelector('.ot-stats');
+    if (!box) return;
+    box.innerHTML = statTile(s.unis, 'Universities') + statTile(s.profs, 'Professors') +
+      statTile(s.contacted, 'Contacted', 'a') + statTile(s.talking, 'In talks', 'v') +
+      statTile(s.replied, 'Replied', 'g') + statTile(s.replyRate + '%', 'Reply rate', 'g');
+  }
+
+  /* Excel-ish movement inside the professor grid */
+  function onGridKey(e) {
+    var el = e.target;
+    if (!el.classList || !el.classList.contains('ot-cell')) return;
+    var tr = el.closest('tr[data-pid]');
+    if (!tr) return;
+    var cellsIn = function (row) { return Array.from(row.querySelectorAll('.ot-cell')); };
+    var rowsAll = Array.from(tr.closest('tbody').querySelectorAll('tr[data-pid]'));
+    var ri = rowsAll.indexOf(tr), ci = cellsIn(tr).indexOf(el);
+
+    function go(r, c) {
+      if (r < 0 || r >= rowsAll.length) return;
+      var cs = cellsIn(rowsAll[r]);
+      if (c < 0 || c >= cs.length) return;
+      cs[c].focus();
+      if (cs[c].select && cs[c].tagName === 'INPUT') cs[c].select();
+    }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      var next = ci + (e.shiftKey ? -1 : 1);
+      var width = cellsIn(tr).length;
+      if (next >= width) go(ri + 1, 0);
+      else if (next < 0) go(ri - 1, width - 1);
+      else go(ri, next);
+    } else if (e.key === 'Enter') {
+      e.preventDefault(); go(ri + (e.shiftKey ? -1 : 1), ci);
+    } else if (e.key === 'ArrowDown' && el.tagName === 'INPUT') {
+      e.preventDefault(); go(ri + 1, ci);
+    } else if (e.key === 'ArrowUp' && el.tagName === 'INPUT') {
+      e.preventDefault(); go(ri - 1, ci);
+    }
+  }
+
+  /* ---------- forms ---------- */
   function uniForm(id) {
     var u = id ? OUTREACH.uniById(id) : {};
     if (!u) return;
     openForm({
       title: id ? 'Edit University' : 'Add University',
-      sub: 'Where you are applying, and what you are applying for',
+      sub: id ? '' : 'Then add the professors you contact there',
       fields: [
         { k: 'name', label: 'University Name', type: 'text', val: u.name, req: true, full: true },
-        { k: 'website', label: 'University Website', type: 'text', val: u.website, full: true },
-        { k: 'course', label: 'Course / Programme', type: 'text', val: u.course },
-        { k: 'location', label: 'University Location', type: 'text', val: u.location },
+        { k: 'location', label: 'Location', type: 'text', val: u.location },
+        { k: 'website', label: 'Website', type: 'text', val: u.website },
         { k: 'status', label: 'Status', type: 'select', opts: OUTREACH.UNI_STATUS, val: u.status || 'Researching' },
         { k: 'notes', label: 'Notes', type: 'textarea', val: u.notes, full: true }
       ],
       onSave: function (f) {
         if (id) OUTREACH.updateUni(id, f);
-        else OUTREACH.addUni(Object.assign({ country: mountedCountry }, f));
+        else OUTREACH.addUni(Object.assign({ country: country }, f));
         if (window.toast) toast(id ? 'University updated' : 'University added', 'ok');
+        render();
       }
     });
   }
 
-  function profForm(id, uniId) {
-    var p = id ? OUTREACH.profById(id) : {};
-    if (!p) return;
-    var targetUni = uniId || p.uniId;
-    var list = OUTREACH.unisFor(mountedCountry);
-    var names = list.map(function (x) { return x.name; });
-    var cur = OUTREACH.uniById(targetUni);
-    openForm({
-      title: id ? 'Edit Professor' : 'Add Professor',
-      sub: cur ? cur.name : '',
-      fields: [
-        { k: 'name', label: 'Professor Name', type: 'text', val: p.name, req: true, full: true },
-        { k: 'uniName', label: 'University', type: 'select', opts: names, val: cur ? cur.name : names[0] },
-        { k: 'title', label: 'Title / Department', type: 'text', val: p.title },
-        { k: 'email', label: 'Professor Email', type: 'text', val: p.email },
-        { k: 'mobile', label: 'Professor Mobile', type: 'text', val: p.mobile },
-        { k: 'research', label: 'Research Area', type: 'text', val: p.research, full: true },
-        { k: 'status', label: 'Status', type: 'select', opts: OUTREACH.PROF_STATUS, val: p.status || 'Not contacted' },
-        { k: 'emailedOn', label: 'Emailed On', type: 'date', val: p.emailedOn },
-        { k: 'notes', label: 'Notes', type: 'textarea', val: p.notes, full: true }
-      ],
-      onSave: function (f) {
-        var picked = list.find(function (x) { return x.name === f.uniName; });
-        var rec = Object.assign({}, f, { uniId: picked ? picked.id : targetUni, uniName: f.uniName });
-        if (id) OUTREACH.updateProf(id, rec);
-        else OUTREACH.addProf(rec);
-        if (window.toast) toast(id ? 'Professor updated' : 'Professor added', 'ok');
-      }
-    });
-  }
-
-  function responseForm(profId) {
+  function updForm(profId, idx) {
     var p = OUTREACH.profById(profId);
     if (!p) return;
-    var n = (p.responseList || []).length + 1;
+    var cur = idx == null ? null : (p.updateList || [])[idx];
     openForm({
-      title: 'Response ' + n,
-      sub: p.name + (p.uniName ? ' · ' + p.uniName : ''),
+      title: cur ? 'Edit update' : 'Email update ' + ((p.updateList || []).length + 1),
+      sub: p.name || 'Professor',
       fields: [
-        { k: 'date', label: 'Date', type: 'date', val: OUTREACH.today() },
-        { k: 'text', label: 'What did they say?', type: 'textarea', val: '', req: true, full: true }
+        { k: 'date', label: 'Date', type: 'date', val: cur ? cur.date : OUTREACH.today() },
+        { k: 'text', label: 'What happened?', type: 'textarea', val: cur ? cur.text : '', req: true, full: true }
       ],
       onSave: function (f) {
         if (!f.text) return;
-        OUTREACH.addResponse(profId, f.text, f.date);
-        if (window.toast) toast('Response ' + n + ' logged', 'ok');
+        if (cur) OUTREACH.editUpdate(profId, idx, f.text, f.date);
+        else { OUTREACH.addUpdate(profId, f.text, f.date); openProf[profId] = true; }
+        if (window.toast) toast('Update saved', 'ok');
+        render();
       }
     });
   }
 
-  OUTREACH.onChange(rerender);
+  OUTREACH.onChange(function () {
+    // never redraw out from under a cell being typed in
+    if (host && host.contains(document.activeElement)) return;
+    if (host && country) render();
+  });
 
-  return { render: render, rerender: rerender };
+  return { render: render, rerender: function () { if (host && country) render(); } };
 })();

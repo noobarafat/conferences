@@ -1,69 +1,53 @@
 /* ============================================================
-   outreach.js — university + professor contact tracker.
+   outreach.js — data layer for the university / professor tracker.
 
-   Purpose: keep a record of every professor contacted and every
-   university researched, so the outreach effort is measurable
-   and reusable later.
+   Shape:
+     University (card)  →  Professors (grid inside the card)
+                            →  Email updates (dated log per professor)
 
-   Storage strategy (local-first, Sheet-backed):
-     • localStorage is the render cache — the UI paints instantly,
-       never waiting on the network.
-     • Google Sheet is the durable store. Reads happen in the
-       background on load; writes are optimistic (local first,
-       then pushed to the Sheet).
-     • Two auto-created tabs: "Universities" and "Professors",
-       linked by uniId. Code.gs::ensureSheet builds the headers
-       on the first create, so no manual Sheet setup is needed.
+   Two Google Sheet tabs, linked by uniId:
+     Universities : id, country, name, location, website, status, notes
+     Professors   : id, uniId, uniName, name, email, mobile, subject,
+                    status, updates, notes
 
-   Loaded in <head> (after sheet-api.js) so the dashboard's inline
-   script can call OUTREACH.* during its own init.
+   Local-first: localStorage is what the UI renders from, so nothing
+   ever waits on the network. Writes apply locally first, then push
+   to the Sheet in the background.
    ============================================================ */
 window.OUTREACH = (function () {
   'use strict';
 
   var UNI_TAB = 'Universities';
   var PROF_TAB = 'Professors';
-  var LS_UNI = 'outreach_unis';
-  var LS_PROF = 'outreach_profs';
-  var FOLLOWUP_DAYS = 10;   // no reply after this many days -> nudge
+  var LS_UNI = 'outreach_unis_v2';
+  var LS_PROF = 'outreach_profs_v2';
+
+  var UNI_FIELDS = ['id', 'country', 'name', 'location', 'website', 'status', 'notes'];
+  var PROF_FIELDS = ['id', 'uniId', 'uniName', 'name', 'email', 'mobile', 'subject', 'status', 'updates', 'notes'];
+
+  var UNI_STATUS = ['Researching', 'Shortlisted', 'Applied', 'Accepted', 'Rejected'];
+  var PROF_STATUS = ['Not contacted', 'Emailed', 'Discussing', 'Interviewing', 'Positive', 'Rejected', 'No response'];
 
   var unis = [];
   var profs = [];
-  var subscribers = [];
-  var syncState = 'idle';   // idle | syncing | ok | offline
+  var subs = [];
+  var syncState = 'idle';   // idle | syncing | ok | offline | no-tab
+  var pending = {};
+  var timer = null;
 
-  var UNI_FIELDS = ['id', 'country', 'name', 'website', 'course', 'location', 'status', 'notes'];
-  var PROF_FIELDS = ['id', 'uniId', 'uniName', 'name', 'email', 'mobile', 'title', 'research', 'status', 'emailedOn', 'responses', 'notes'];
-
-  var PROF_STATUS = ['Not contacted', 'Emailed', 'Replied', 'Positive', 'Negative', 'No response'];
-  var UNI_STATUS = ['Researching', 'Shortlisted', 'Applied', 'Accepted', 'Rejected'];
-
-  /* ---------- small helpers ---------- */
+  /* ---------- helpers ---------- */
   function uuid() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-    return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   }
-  function lsGet(k, fb) {
-    try { var v = JSON.parse(localStorage.getItem(k)); return Array.isArray(v) ? v : fb; }
-    catch (e) { return fb; }
-  }
-  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function today() {
     var d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
-  function daysSince(ds) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(ds || '')) return null;
-    var p = ds.split('-').map(Number);
-    var then = Date.UTC(p[0], p[1] - 1, p[2]);
-    var n = new Date();
-    var now = Date.UTC(n.getFullYear(), n.getMonth(), n.getDate());
-    return Math.round((now - then) / 86400000);
-  }
 
-  /* Responses are stored in one cell as:  YYYY-MM-DD::text | YYYY-MM-DD::text
-     Kept human-readable so the Sheet stays editable by hand. */
-  function parseResponses(raw) {
+  /* Updates live in one cell as  YYYY-MM-DD::text | YYYY-MM-DD::text
+     so the Sheet stays readable and hand-editable. */
+  function parseUpdates(raw) {
     if (Array.isArray(raw)) return raw;
     if (!raw) return [];
     return String(raw).split('|').map(function (chunk) {
@@ -73,152 +57,130 @@ window.OUTREACH = (function () {
       return i === -1 ? { date: '', text: s } : { date: s.slice(0, i).trim(), text: s.slice(i + 2).trim() };
     }).filter(Boolean);
   }
-  function serializeResponses(list) {
-    return (list || []).map(function (r) { return (r.date || '') + '::' + (r.text || ''); }).join(' | ');
+  function joinUpdates(list) {
+    return (list || []).map(function (u) { return (u.date || '') + '::' + (u.text || ''); }).join(' | ');
   }
 
   function normUni(r) {
     var o = {};
     UNI_FIELDS.forEach(function (k) { o[k] = r[k] == null ? '' : String(r[k]); });
+    if (!o.id) o.id = uuid();
     if (!o.status) o.status = 'Researching';
     return o;
   }
   function normProf(r) {
     var o = {};
     PROF_FIELDS.forEach(function (k) { o[k] = r[k] == null ? '' : String(r[k]); });
+    if (!o.id) o.id = uuid();
     if (!o.status) o.status = 'Not contacted';
-    o.emailedOn = (o.emailedOn || '').slice(0, 10);
-    o.responseList = parseResponses(o.responses);
+    o.updateList = parseUpdates(o.updates);
     return o;
   }
-
-  /* ---------- change notification ---------- */
-  function onChange(fn) { subscribers.push(fn); }
-  function emit() {
-    lsSet(LS_UNI, unis);
-    lsSet(LS_PROF, profs.map(function (p) {
-      var c = {}; PROF_FIELDS.forEach(function (k) { c[k] = p[k]; }); return c;
-    }));
-    subscribers.forEach(function (fn) { try { fn(); } catch (e) {} });
+  function rowOf(o, fields) {
+    var r = {}; fields.forEach(function (k) { r[k] = o[k] == null ? '' : o[k]; }); return r;
   }
 
-  /* ---------- Sheet sync ---------- */
-  function sheetReady() { return window.SHEET && SHEET.configured(); }
+  function save() {
+    try {
+      localStorage.setItem(LS_UNI, JSON.stringify(unis));
+      localStorage.setItem(LS_PROF, JSON.stringify(profs.map(function (p) { return rowOf(p, PROF_FIELDS); })));
+    } catch (e) {}
+  }
+  function emit() { save(); subs.forEach(function (f) { try { f(); } catch (e) {} }); }
+  function notify() { subs.forEach(function (f) { try { f(); } catch (e) {} }); }
+  function onChange(f) { subs.push(f); }
+
+  /* ---------- Sheet ---------- */
+  function sheetOn() { return window.SHEET && SHEET.configured() && syncState !== 'no-tab'; }
+  function flagNoTab(err) {
+    if (/no tab named/i.test(String(err && err.message))) { syncState = 'no-tab'; notify(); return true; }
+    return false;
+  }
 
   function sync() {
-    if (!sheetReady()) { syncState = 'offline'; return Promise.resolve(false); }
+    if (!(window.SHEET && SHEET.configured())) { syncState = 'offline'; return Promise.resolve(false); }
     syncState = 'syncing';
-    return Promise.all([
-      SHEET.get(UNI_TAB).catch(function () { return null; }),
-      SHEET.get(PROF_TAB).catch(function () { return null; })
-    ]).then(function (res) {
-      // A missing tab returns null (it just hasn't been created yet) — that's
-      // not an error, it only means nothing has been saved there so far.
-      if (res[0]) unis = res[0].map(normUni).filter(function (u) { return u.id; });
-      if (res[1]) profs = res[1].map(normProf).filter(function (p) { return p.id; });
+    return Promise.all([SHEET.get(UNI_TAB), SHEET.get(PROF_TAB)]).then(function (res) {
+      unis = res[0].map(normUni);
+      profs = res[1].map(normProf);
       syncState = 'ok';
       emit();
       return true;
-    }).catch(function () { syncState = 'offline'; return false; });
-  }
-
-  /* The deployed Apps Script may predate Code.gs::ensureSheet, in which case
-     it cannot auto-create the Universities / Professors tabs and every write
-     fails with `no tab named "…"`. That is a deployment issue, not a data
-     issue: we keep everything in localStorage, flag the tab as unavailable so
-     we stop retrying on every keystroke, and surface one actionable notice. */
-  var missingTabs = {};
-  function tabMissing(tab) { return !!missingTabs[tab]; }
-
-  function push(tab, action, payload) {
-    if (!sheetReady() || missingTabs[tab]) return Promise.resolve(false);
-    var call = action === 'create' ? SHEET.create(tab, payload)
-      : action === 'update' ? SHEET.update(tab, payload)
-        : SHEET.remove(tab, payload);
-    return call.then(function () { return true; }).catch(function (err) {
-      var msg = String(err && err.message || err);
-      if (/no tab named/i.test(msg)) {
-        missingTabs[tab] = true;
-        syncState = 'no-tab';
-        subscribers.forEach(function (fn) { try { fn(); } catch (e) {} });
-      } else if (window.toast) {
-        toast('Sheet save failed — kept locally. ' + msg, 'warn');
-      }
+    }).catch(function (err) {
+      if (!flagNoTab(err)) { syncState = 'offline'; notify(); }
       return false;
     });
   }
 
-  // Re-try the Sheet after the backend has been redeployed.
-  function retrySheet() {
-    missingTabs = {};
-    syncState = 'idle';
-    return sync().then(function (ok) {
-      if (!ok) return false;
-      // replay everything we hold locally so the Sheet catches up
-      var jobs = [];
-      unis.forEach(function (u) { jobs.push(push(UNI_TAB, 'create', toRow(u, UNI_FIELDS))); });
-      profs.forEach(function (p) { jobs.push(push(PROF_TAB, 'create', toRow(p, PROF_FIELDS))); });
-      return Promise.all(jobs).then(function () { return sync(); });
+  function push(tab, action, payload) {
+    if (!sheetOn()) return Promise.resolve(false);
+    var call = action === 'create' ? SHEET.create(tab, payload)
+      : action === 'update' ? SHEET.update(tab, payload)
+        : SHEET.remove(tab, payload);
+    return call.then(function () { return true; }).catch(function (err) {
+      if (!flagNoTab(err) && window.toast) toast('Sheet save failed — kept locally', 'warn');
+      return false;
     });
   }
-  function toRow(obj, fields) {
-    var r = {}; fields.forEach(function (k) { r[k] = obj[k] == null ? '' : obj[k]; }); return r;
+
+  /* Debounced, so typing in a grid cell is not one request per keystroke. */
+  function queue(tab, obj, fields) {
+    pending[tab + ':' + obj.id] = { tab: tab, row: rowOf(obj, fields) };
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(function () {
+      timer = null;
+      var batch = pending; pending = {};
+      Object.keys(batch).forEach(function (k) { push(batch[k].tab, 'update', batch[k].row); });
+    }, 800);
   }
 
   /* ---------- reads ---------- */
-  function unisFor(country) { return unis.filter(function (u) { return u.country === country; }); }
+  function unisFor(c) { return unis.filter(function (u) { return u.country === c; }); }
   function profsFor(uniId) { return profs.filter(function (p) { return p.uniId === uniId; }); }
-  function profsForCountry(country) {
+  function profsForCountry(c) {
     var ids = {};
-    unisFor(country).forEach(function (u) { ids[u.id] = 1; });
+    unisFor(c).forEach(function (u) { ids[u.id] = 1; });
     return profs.filter(function (p) { return ids[p.uniId]; });
   }
   function uniById(id) { return unis.find(function (u) { return u.id === id; }); }
   function profById(id) { return profs.find(function (p) { return p.id === id; }); }
 
-  function needsFollowUp(p) {
-    if (p.status !== 'Emailed') return false;
-    if (p.responseList && p.responseList.length) return false;
-    var d = daysSince(p.emailedOn);
-    return d !== null && d >= FOLLOWUP_DAYS;
-  }
-
   function stats(country) {
     var list = country ? profsForCountry(country) : profs;
-    var contacted = list.filter(function (p) { return p.status !== 'Not contacted'; }).length;
-    var replied = list.filter(function (p) {
-      return p.status === 'Replied' || p.status === 'Positive' || p.status === 'Negative' ||
-        (p.responseList && p.responseList.length);
+    var contacted = list.filter(function (p) { return p.status && p.status !== 'Not contacted'; }).length;
+    var talking = list.filter(function (p) {
+      return p.status === 'Discussing' || p.status === 'Interviewing' || p.status === 'Positive';
     }).length;
-    var positive = list.filter(function (p) { return p.status === 'Positive'; }).length;
+    var replied = list.filter(function (p) {
+      return (p.updateList && p.updateList.length) || p.status === 'Discussing' ||
+        p.status === 'Interviewing' || p.status === 'Positive' || p.status === 'Rejected';
+    }).length;
     return {
       unis: country ? unisFor(country).length : unis.length,
       profs: list.length,
       contacted: contacted,
       replied: replied,
-      positive: positive,
-      awaiting: list.filter(function (p) { return p.status === 'Emailed'; }).length,
-      followUp: list.filter(needsFollowUp).length,
+      talking: talking,
       replyRate: contacted ? Math.round(replied / contacted * 100) : 0
     };
   }
 
-  /* ---------- writes ---------- */
+  /* ---------- university writes ---------- */
   function addUni(rec) {
     var u = normUni(Object.assign({ id: uuid() }, rec));
     unis.push(u); emit();
-    push(UNI_TAB, 'create', toRow(u, UNI_FIELDS));
+    push(UNI_TAB, 'create', rowOf(u, UNI_FIELDS));
     return u;
   }
   function updateUni(id, rec) {
     var u = uniById(id); if (!u) return null;
+    var renamed = rec.name != null && rec.name !== u.name;
     Object.assign(u, normUni(Object.assign({}, u, rec, { id: id })));
-    // keep the denormalized name on child rows in step
-    profsFor(id).forEach(function (p) {
-      if (p.uniName !== u.name) { p.uniName = u.name; push(PROF_TAB, 'update', toRow(p, PROF_FIELDS)); }
-    });
+    if (renamed) {
+      profsFor(id).forEach(function (p) { p.uniName = u.name; queue(PROF_TAB, p, PROF_FIELDS); });
+    }
     emit();
-    push(UNI_TAB, 'update', toRow(u, UNI_FIELDS));
+    push(UNI_TAB, 'update', rowOf(u, UNI_FIELDS));
     return u;
   }
   function removeUni(id) {
@@ -229,20 +191,29 @@ window.OUTREACH = (function () {
     push(UNI_TAB, 'delete', id);
     kids.forEach(function (p) { push(PROF_TAB, 'delete', p.id); });
   }
-  function addProf(rec) {
-    var u = uniById(rec.uniId);
-    var p = normProf(Object.assign({ id: uuid(), uniName: u ? u.name : '' }, rec));
+
+  /* ---------- professor writes ---------- */
+  function addProf(uniId, rec) {
+    var u = uniById(uniId);
+    var p = normProf(Object.assign({ id: uuid(), uniId: uniId, uniName: u ? u.name : '' }, rec || {}));
     profs.push(p); emit();
-    push(PROF_TAB, 'create', toRow(p, PROF_FIELDS));
+    push(PROF_TAB, 'create', rowOf(p, PROF_FIELDS));
+    return p;
+  }
+  /* Used by the inline grid — saves locally at once, pushes debounced. */
+  function setProfCell(id, key, value) {
+    var p = profById(id); if (!p || p[key] === value) return p;
+    p[key] = value;
+    save();
+    queue(PROF_TAB, p, PROF_FIELDS);
     return p;
   }
   function updateProf(id, rec) {
     var p = profById(id); if (!p) return null;
-    var merged = Object.assign({}, p, rec, { id: id });
-    merged.responses = rec.responseList ? serializeResponses(rec.responseList) : p.responses;
-    Object.assign(p, normProf(merged));
+    if (rec.updateList) rec.updates = joinUpdates(rec.updateList);
+    Object.assign(p, normProf(Object.assign({}, rowOf(p, PROF_FIELDS), rec, { id: id })));
     emit();
-    push(PROF_TAB, 'update', toRow(p, PROF_FIELDS));
+    push(PROF_TAB, 'update', rowOf(p, PROF_FIELDS));
     return p;
   }
   function removeProf(id) {
@@ -250,64 +221,93 @@ window.OUTREACH = (function () {
     emit();
     push(PROF_TAB, 'delete', id);
   }
-  function addResponse(profId, text, date) {
+
+  /* ---------- email updates ---------- */
+  function addUpdate(profId, text, date) {
     var p = profById(profId); if (!p) return null;
-    var list = (p.responseList || []).slice();
+    var list = (p.updateList || []).slice();
     list.push({ date: date || today(), text: text });
-    var next = { responseList: list };
-    // first reply logged -> move the pipeline forward automatically
-    if (p.status === 'Emailed' || p.status === 'Not contacted') next.status = 'Replied';
-    return updateProf(profId, next);
+    var patch = { updateList: list };
+    if (p.status === 'Not contacted' || p.status === 'Emailed') patch.status = 'Discussing';
+    return updateProf(profId, patch);
   }
-  function removeResponse(profId, idx) {
+  function editUpdate(profId, idx, text, date) {
     var p = profById(profId); if (!p) return null;
-    var list = (p.responseList || []).slice();
-    list.splice(idx, 1);
-    return updateProf(profId, { responseList: list });
+    var list = (p.updateList || []).slice();
+    if (!list[idx]) return null;
+    list[idx] = { date: date || list[idx].date, text: text };
+    return updateProf(profId, { updateList: list });
   }
-  function markEmailed(profId) {
-    return updateProf(profId, { status: 'Emailed', emailedOn: today() });
+  function removeUpdate(profId, idx) {
+    var p = profById(profId); if (!p) return null;
+    var list = (p.updateList || []).slice();
+    list.splice(idx, 1);
+    return updateProf(profId, { updateList: list });
   }
 
-  /* ---------- CSV export ---------- */
-  function csvCell(v) {
+  /* ---------- retry after the backend is redeployed ---------- */
+  function retrySheet() {
+    syncState = 'idle';
+    if (!(window.SHEET && SHEET.configured())) { syncState = 'offline'; notify(); return Promise.resolve(false); }
+    var localU = unis.slice(), localP = profs.slice();
+    return Promise.all([SHEET.get(UNI_TAB), SHEET.get(PROF_TAB)]).then(function (res) {
+      var haveU = {}, haveP = {};
+      res[0].forEach(function (r) { haveU[r.id] = 1; });
+      res[1].forEach(function (r) { haveP[r.id] = 1; });
+      var jobs = [];
+      localU.forEach(function (u) { if (!haveU[u.id]) jobs.push(push(UNI_TAB, 'create', rowOf(u, UNI_FIELDS))); });
+      localP.forEach(function (p) { if (!haveP[p.id]) jobs.push(push(PROF_TAB, 'create', rowOf(p, PROF_FIELDS))); });
+      return Promise.all(jobs).then(function () { return sync(); });
+    }).catch(function (err) {
+      if (!flagNoTab(err)) { syncState = 'offline'; notify(); }
+      return false;
+    });
+  }
+
+  /* ---------- CSV ---------- */
+  function cell(v) {
     var s = String(v == null ? '' : v);
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
   function exportCsv(country) {
-    var list = country ? profsForCountry(country) : profs;
-    var head = ['University', 'Website', 'Course', 'Location', 'Professor', 'Title', 'Email', 'Mobile', 'Research', 'Status', 'Emailed On', 'Responses', 'Notes'];
-    var rows = list.map(function (p) {
-      var u = uniById(p.uniId) || {};
-      return [u.name || p.uniName, u.website, u.course, u.location, p.name, p.title, p.email, p.mobile,
-        p.research, p.status, p.emailedOn,
-      (p.responseList || []).map(function (r) { return r.date + ' ' + r.text; }).join(' ; '), p.notes];
+    var head = ['University', 'Location', 'Website', 'Uni Status', 'Professor', 'Email', 'Mobile', 'Subject', 'Status', 'Email Updates', 'Notes'];
+    var body = [];
+    unisFor(country).forEach(function (u) {
+      var kids = profsFor(u.id);
+      if (!kids.length) { body.push([u.name, u.location, u.website, u.status, '', '', '', '', '', '', u.notes]); return; }
+      kids.forEach(function (p) {
+        body.push([u.name, u.location, u.website, u.status, p.name, p.email, p.mobile, p.subject, p.status,
+          (p.updateList || []).map(function (x) { return x.date + ' ' + x.text; }).join(' ; '), p.notes]);
+      });
     });
-    var csv = [head].concat(rows).map(function (r) { return r.map(csvCell).join(','); }).join('\r\n');
+    var csv = [head].concat(body).map(function (r) { return r.map(cell).join(','); }).join('\r\n');
     var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'outreach-' + (country || 'all') + '-' + today() + '.csv';
     document.body.appendChild(a); a.click();
-    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 400);
   }
 
-  /* ---------- boot: hydrate from cache, then reconcile with the Sheet ---------- */
-  unis = lsGet(LS_UNI, []).map(normUni);
-  profs = lsGet(LS_PROF, []).map(normProf);
+  /* ---------- boot ---------- */
+  try {
+    var cu = JSON.parse(localStorage.getItem(LS_UNI) || '[]');
+    var cp = JSON.parse(localStorage.getItem(LS_PROF) || '[]');
+    if (Array.isArray(cu)) unis = cu.map(normUni);
+    if (Array.isArray(cp)) profs = cp.map(normProf);
+  } catch (e) {}
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { sync(); });
   else sync();
 
   return {
-    UNI_STATUS: UNI_STATUS, PROF_STATUS: PROF_STATUS, FOLLOWUP_DAYS: FOLLOWUP_DAYS,
+    UNI_STATUS: UNI_STATUS, PROF_STATUS: PROF_STATUS,
     onChange: onChange, sync: sync, retrySheet: retrySheet,
-    syncState: function () { return syncState; }, tabMissing: tabMissing,
+    syncState: function () { return syncState; },
     unisFor: unisFor, profsFor: profsFor, profsForCountry: profsForCountry,
-    uniById: uniById, profById: profById,
+    uniById: uniById, profById: profById, stats: stats,
     addUni: addUni, updateUni: updateUni, removeUni: removeUni,
-    addProf: addProf, updateProf: updateProf, removeProf: removeProf,
-    addResponse: addResponse, removeResponse: removeResponse, markEmailed: markEmailed,
-    needsFollowUp: needsFollowUp, daysSince: daysSince, stats: stats,
+    addProf: addProf, updateProf: updateProf, removeProf: removeProf, setProfCell: setProfCell,
+    addUpdate: addUpdate, editUpdate: editUpdate, removeUpdate: removeUpdate,
     exportCsv: exportCsv, today: today
   };
 })();

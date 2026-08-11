@@ -1610,23 +1610,32 @@
     if (!box) return;
     let html = '';
 
-    // professors who were emailed but have gone quiet — most time-sensitive
-    if (window.OUTREACH) {
-      const due = OUTREACH.profsForCountry ? COUNTRIES.reduce(
-        (acc, c) => acc.concat(OUTREACH.profsForCountry(c.id).filter(OUTREACH.needsFollowUp)), []) : [];
-      if (due.length) {
-        html += '<p class="section-label" style="margin:2.2rem 3rem 0">Follow up · emailed over ' + OUTREACH.FOLLOWUP_DAYS + ' days ago, still no reply</p>' +
-          '<div class="entry-list">' + due.map(p => {
+    // Professors emailed with nothing logged back yet, plus any live
+    // conversation — the two lists worth acting on first.
+    if (window.OUTREACH && typeof COUNTRIES !== 'undefined') {
+      const all = COUNTRIES.reduce((acc, c) => acc.concat(OUTREACH.profsForCountry(c.id)), []);
+      const waiting = all.filter(p => p.status === 'Emailed' && !(p.updateList || []).length);
+      const live = all.filter(p => p.status === 'Discussing' || p.status === 'Interviewing' || p.status === 'Positive');
+
+      const block = (rows, label, pill, pillCls) => {
+        if (!rows.length) return '';
+        return '<p class="section-label" style="margin:2.2rem 3rem 0">' + label + '</p>' +
+          '<div class="entry-list">' + rows.map(p => {
             const uni = OUTREACH.uniById(p.uniId);
             const cid = uni ? uni.country : '';
             return '<div class="entry" style="cursor:pointer" onclick="gotoTab(\'country\');openCountryDetail(\'' + cid + '\')">' +
               '<div class="entry-top"><div>' +
-                '<div class="entry-title">' + esc(p.name) + '</div>' +
-                '<div class="entry-meta"><span>' + esc(p.uniName) + '</span><span>✉ ' + OUTREACH.daysSince(p.emailedOn) + ' days ago</span></div>' +
-              '</div><span class="pill pill-amber">Nudge</span></div>' +
+                '<div class="entry-title">' + esc(p.name || 'Unnamed professor') + '</div>' +
+                '<div class="entry-meta"><span>' + esc(p.uniName) + '</span>' +
+                  (p.subject ? '<span>' + esc(p.subject) + '</span>' : '') +
+                  '<span>' + (p.updateList || []).length + ' update(s)</span></div>' +
+              '</div><span class="pill ' + pillCls + '">' + pill + '</span></div>' +
             '</div>';
           }).join('') + '</div>';
-      }
+      };
+
+      html += block(live, 'In conversation · professors currently discussing or interviewing', 'Live', 'pill-violet');
+      html += block(waiting, 'Awaiting reply · emailed, nothing logged back yet', 'Waiting', 'pill-amber');
     }
 
     if (typeof ERASMUS_PROGRAMS !== 'undefined') {

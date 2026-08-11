@@ -92,9 +92,4 @@ function countryDocsProgress(c) {
   return { done: checks.filter(Boolean).length, total: c.documents.length, checks };
 }
 
-// User-added "University" list per country — free-form entries.
-function uniListKey(id) { return 'country_uni::' + id; }
-function getCountryUnis(id) {
-  try { const v = JSON.parse(localStorage.getItem(uniListKey(id)) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; }
-}
-function saveCountryUnis(id, list) { localStorage.setItem(uniListKey(id), JSON.stringify(list)); }
+// Universities and professors now live in assets/outreach.js (Sheet-backed).
