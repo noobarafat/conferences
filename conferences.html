@@ -8,6 +8,7 @@
 <script src="assets/sheet-api.js"></script>
 <script src="assets/erasmus-data.js"></script>
 <script src="assets/country-data.js"></script>
+<script src="assets/outreach.js"></script>
 <style>
   :root {
     --bg: #0d0f14;
@@ -1142,12 +1143,13 @@
 
   function ctryCardHTML(c) {
     const pr = countryDocsProgress(c);
-    const unis = getCountryUnis(c.id);
+    const os = window.OUTREACH ? OUTREACH.stats(c.id) : { unis: 0, profs: 0 };
     return '<div class="ctry-card" onclick="openCountryDetail(\'' + c.id + '\')">' +
       '<div class="ctry-icon">' + c.flag + '</div>' +
       '<div class="prog-name">' + esc(c.name) + '</div>' +
       '<div class="ctry-stats">' +
-        '<div class="ctry-stat"><b>' + unis.length + '</b><span>Universities</span></div>' +
+        '<div class="ctry-stat"><b>' + os.unis + '</b><span>Universities</span></div>' +
+        '<div class="ctry-stat"><b>' + os.profs + '</b><span>Professors</span></div>' +
         '<div class="ctry-stat"><b>' + pr.done + '/' + pr.total + '</b><span>Docs ready</span></div>' +
       '</div>' +
     '</div>';
@@ -1168,7 +1170,6 @@
     if (!c) { box.innerHTML = emptyState('🌍', 'Country not found.'); return; }
     const pr = countryDocsProgress(c);
     const pct = Math.round(pr.done / pr.total * 100);
-    const unis = getCountryUnis(c.id);
     box.innerHTML = '<div class="ctry-detail">' +
       '<button class="prog-back" onclick="backToCountries()">← Countries</button>' +
       '<div class="prog-detail-head"><div><h3>' + c.flag + ' ' + esc(c.name) + '</h3></div></div>' +
@@ -1183,22 +1184,13 @@
             '<span>' + esc(d) + '</span>' +
           '</label>'
         ).join('') + '</div></div>' +
-      '<div class="prog-section"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.8rem">' +
-        '<h4 style="margin:0">University</h4><button class="btn" onclick="openCountryUniForm(\'' + c.id + '\')">+ Add University</button>' +
-      '</div>' +
-      (unis.length ? unis.map(u =>
-        '<div class="uni-mini-card"><div class="uni-mini-top"><div>' +
-          '<div class="uni-mini-name">' + esc(u.name) + '</div>' +
-          (u.details ? '<div class="uni-mini-details">' + esc(u.details) + '</div>' : '') +
-          (u.link ? '<a class="uni-mini-link" href="' + esc(u.link) + '" target="_blank" rel="noopener">Official page ↗</a>' : '') +
-          '<div><span class="status-badge st-' + (u.status || 'researching').toLowerCase() + '">' + esc(u.status || 'Researching') + '</span></div>' +
-        '</div><div class="uni-actions">' +
-          '<button class="icon-btn" onclick="openCountryUniForm(\'' + c.id + '\',\'' + u.id + '\')" title="Edit">✎</button>' +
-          '<button class="icon-btn del" onclick="deleteCountryUni(\'' + c.id + '\',\'' + u.id + '\')" title="Delete">🗑</button>' +
-        '</div></div></div>'
-      ).join('') : emptyState('🏛️', 'No universities added yet.')) +
+      '<div class="prog-section"><h4>Universities &amp; Professor Outreach</h4>' +
+        '<div id="outreach-host"></div>' +
       '</div>' +
     '</div>';
+
+    // the tracker owns everything inside #outreach-host (see outreach-ui.js)
+    if (window.OUTREACH_UI) OUTREACH_UI.render(document.getElementById('outreach-host'), c.id);
 
     box.querySelectorAll('[data-ctry-chk-idx]').forEach(cb => {
       cb.addEventListener('change', () => {
@@ -1209,41 +1201,6 @@
         renderDocs();
       });
     });
-  }
-
-  function countryUniFields(u) {
-    return [
-      { k: 'name', label: 'University Name', type: 'text', val: u.name, req: true, full: true },
-      { k: 'details', label: 'Details (programme, deadline, requirements, notes)', type: 'textarea', val: u.details, full: true },
-      { k: 'link', label: 'Official Link', type: 'text', val: u.link, full: true },
-      { k: 'status', label: 'Status', type: 'select', opts: ['Researching', 'Applied', 'Accepted', 'Rejected'], val: u.status || 'Researching' }
-    ];
-  }
-  function openCountryUniForm(countryId, uniId) {
-    const list = getCountryUnis(countryId);
-    const u = uniId ? (list.find(x => x.id === uniId) || {}) : {};
-    openForm({
-      title: uniId ? 'Edit University' : 'Add University',
-      sub: countryById(countryId).name,
-      fields: countryUniFields(u),
-      onSave: f => {
-        const list2 = getCountryUnis(countryId);
-        if (uniId) {
-          const existing = list2.find(x => x.id === uniId);
-          if (existing) Object.assign(existing, f);
-        } else {
-          list2.push(Object.assign({ id: uid() }, f));
-        }
-        saveCountryUnis(countryId, list2);
-        renderCountryDetail(countryId);
-        renderCountryPanel();
-      }
-    });
-  }
-  function deleteCountryUni(countryId, uniId) {
-    if (!confirm('Delete this university?')) return;
-    saveCountryUnis(countryId, getCountryUnis(countryId).filter(x => x.id !== uniId));
-    renderCountryDetail(countryId);
   }
 
   // ======================= DOCUMENTS =======================
@@ -1608,18 +1565,20 @@
       ? ERASMUS_PROGRAMS.filter(p => p._status && p._status !== 'researching').length : 0;
     const erasmusTotal = (typeof ERASMUS_PROGRAMS !== 'undefined') ? ERASMUS_PROGRAMS.length : 0;
 
-    let ctryReady = 0, ctryTotal = 0, ctryUnis = 0;
+    let ctryReady = 0, ctryTotal = 0;
     if (typeof COUNTRIES !== 'undefined') {
-      COUNTRIES.forEach(c => { const pr = countryDocsProgress(c); ctryReady += pr.done; ctryTotal += pr.total; ctryUnis += getCountryUnis(c.id).length; });
+      COUNTRIES.forEach(c => { const pr = countryDocsProgress(c); ctryReady += pr.done; ctryTotal += pr.total; });
     }
     const ctryPct = ctryTotal ? Math.round(ctryReady / ctryTotal * 100) : 0;
+    const os = window.OUTREACH ? OUTREACH.stats() : { profs: 0, contacted: 0, replied: 0, replyRate: 0, unis: 0, followUp: 0 };
 
     document.getElementById('ov-stats').innerHTML = [
       { l: 'Papers Submitted', v: papersSubmitted, c: 'stat-amber', s: 'submitted / under review', tab: 'research' },
       { l: 'Papers Published', v: papersPublished, c: 'stat-violet', s: 'of ' + papers.length + ' total', tab: 'research' },
       { l: 'Uni Applications', v: uniApplied, c: 'stat-green', s: 'of ' + uni.length + ' targets', tab: 'uni' },
       { l: 'Erasmus Progress', v: erasmusApplied + '/' + erasmusTotal, c: 'stat-violet', s: 'applied or beyond', tab: 'scholarships' },
-      { l: 'Country Docs', v: ctryPct + '%', c: 'stat-green', s: ctryUnis + ' universities added', tab: 'country' },
+      { l: 'Professors Contacted', v: os.contacted, c: 'stat-accent', s: os.replied + ' replied · ' + os.replyRate + '% reply rate', tab: 'country' },
+      { l: 'Country Docs', v: ctryPct + '%', c: 'stat-green', s: os.unis + ' universities tracked', tab: 'country' },
       { l: 'Documents Ready', v: docStats.pct + '%', c: 'stat-amber', s: docStats.ready + ' / ' + docStats.total + ' ready · all sources', tab: 'docs' }
     ].map(t => '<div class="stat-tile" style="cursor:pointer" onclick="gotoTab(\'' + t.tab + '\')">' +
       '<div class="stat-label">' + t.l + '</div>' +
@@ -1649,20 +1608,43 @@
   function renderOvPriority() {
     const box = document.getElementById('ov-priority');
     if (!box) return;
-    if (typeof ERASMUS_PROGRAMS === 'undefined') { box.innerHTML = ''; return; }
-    const priority = ERASMUS_PROGRAMS.filter(p => p.priorityTier.startsWith('A') && (!p._status || p._status === 'researching'));
-    if (!priority.length) { box.innerHTML = ''; return; }
-    box.innerHTML =
-      '<p class="section-label" style="margin:2.2rem 3rem 0">Priority focus · top-tier Erasmus programmes not yet applied</p>' +
-      '<div class="entry-list">' + priority.map(p => {
-        const pr = docsProgress(p);
-        return '<div class="entry" style="cursor:pointer" onclick="gotoTab(\'scholarships\');openScholarshipDetail(\'' + p.id + '\')">' +
-          '<div class="entry-top"><div>' +
-            '<div class="entry-title">' + esc(p.shortName) + '</div>' +
-            '<div class="entry-meta"><span>' + p.flag + ' ' + esc(p.country) + '</span><span>📋 ' + pr.done + '/' + pr.total + ' docs</span></div>' +
-          '</div><span class="pill pill-blue">' + esc(p.priorityTier) + '</span></div>' +
-        '</div>';
-      }).join('') + '</div>';
+    let html = '';
+
+    // professors who were emailed but have gone quiet — most time-sensitive
+    if (window.OUTREACH) {
+      const due = OUTREACH.profsForCountry ? COUNTRIES.reduce(
+        (acc, c) => acc.concat(OUTREACH.profsForCountry(c.id).filter(OUTREACH.needsFollowUp)), []) : [];
+      if (due.length) {
+        html += '<p class="section-label" style="margin:2.2rem 3rem 0">Follow up · emailed over ' + OUTREACH.FOLLOWUP_DAYS + ' days ago, still no reply</p>' +
+          '<div class="entry-list">' + due.map(p => {
+            const uni = OUTREACH.uniById(p.uniId);
+            const cid = uni ? uni.country : '';
+            return '<div class="entry" style="cursor:pointer" onclick="gotoTab(\'country\');openCountryDetail(\'' + cid + '\')">' +
+              '<div class="entry-top"><div>' +
+                '<div class="entry-title">' + esc(p.name) + '</div>' +
+                '<div class="entry-meta"><span>' + esc(p.uniName) + '</span><span>✉ ' + OUTREACH.daysSince(p.emailedOn) + ' days ago</span></div>' +
+              '</div><span class="pill pill-amber">Nudge</span></div>' +
+            '</div>';
+          }).join('') + '</div>';
+      }
+    }
+
+    if (typeof ERASMUS_PROGRAMS !== 'undefined') {
+      const priority = ERASMUS_PROGRAMS.filter(p => p.priorityTier.startsWith('A') && (!p._status || p._status === 'researching'));
+      if (priority.length) {
+        html += '<p class="section-label" style="margin:2.2rem 3rem 0">Priority focus · top-tier Erasmus programmes not yet applied</p>' +
+          '<div class="entry-list">' + priority.map(p => {
+            const pr = docsProgress(p);
+            return '<div class="entry" style="cursor:pointer" onclick="gotoTab(\'scholarships\');openScholarshipDetail(\'' + p.id + '\')">' +
+              '<div class="entry-top"><div>' +
+                '<div class="entry-title">' + esc(p.shortName) + '</div>' +
+                '<div class="entry-meta"><span>' + p.flag + ' ' + esc(p.country) + '</span><span>📋 ' + pr.done + '/' + pr.total + ' docs</span></div>' +
+              '</div><span class="pill pill-blue">' + esc(p.priorityTier) + '</span></div>' +
+            '</div>';
+          }).join('') + '</div>';
+      }
+    }
+    box.innerHTML = html;
   }
 
   function renderOvQuickLinks() {
@@ -1689,6 +1671,14 @@
   }
 
   // ---- init ----
+  // Outreach data arrives asynchronously (localStorage first, then the
+  // Sheet). Re-draw the surfaces that show its counts whenever it changes.
+  if (window.OUTREACH) {
+    OUTREACH.onChange(() => {
+      renderOverview();
+      if (countryView.mode === 'grid') renderCountryPanel();
+    });
+  }
   renderUni();
   renderErasmusDocs();
   renderCountryDocsPending();
@@ -1749,6 +1739,7 @@
 <div id="toasts" aria-live="polite"></div>
 <canvas id="confetti" aria-hidden="true"></canvas>
 
+<script src="assets/outreach-ui.js"></script>
 <script src="assets/ui-pro.js"></script>
 </body>
 </html>
