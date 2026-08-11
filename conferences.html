@@ -1143,14 +1143,16 @@
 
   function ctryCardHTML(c) {
     const pr = countryDocsProgress(c);
-    const os = window.OUTREACH ? OUTREACH.stats(c.id) : { unis: 0, profs: 0 };
+    const os = window.OUTREACH ? OUTREACH.stats(c.id) : { unis: 0, profs: 0, contacted: 0 };
     return '<div class="ctry-card" onclick="openCountryDetail(\'' + c.id + '\')">' +
       '<div class="ctry-icon">' + c.flag + '</div>' +
       '<div class="prog-name">' + esc(c.name) + '</div>' +
       '<div class="ctry-stats">' +
         '<div class="ctry-stat"><b>' + os.unis + '</b><span>Universities</span></div>' +
         '<div class="ctry-stat"><b>' + os.profs + '</b><span>Professors</span></div>' +
-        '<div class="ctry-stat"><b>' + pr.done + '/' + pr.total + '</b><span>Docs ready</span></div>' +
+        (c.documents.length
+          ? '<div class="ctry-stat"><b>' + pr.done + '/' + pr.total + '</b><span>Docs ready</span></div>'
+          : '<div class="ctry-stat"><b>' + os.contacted + '</b><span>Contacted</span></div>') +
       '</div>' +
     '</div>';
   }
@@ -1169,10 +1171,11 @@
     const c = countryById(id);
     if (!c) { box.innerHTML = emptyState('🌍', 'Country not found.'); return; }
     const pr = countryDocsProgress(c);
-    const pct = Math.round(pr.done / pr.total * 100);
-    box.innerHTML = '<div class="ctry-detail">' +
-      '<button class="prog-back" onclick="backToCountries()">← Countries</button>' +
-      '<div class="prog-detail-head"><div><h3>' + c.flag + ' ' + esc(c.name) + '</h3></div></div>' +
+    const pct = pr.total ? Math.round(pr.done / pr.total * 100) : 0;
+    // Countries with no shared checklist (e.g. the US, where requirements
+    // differ per university) skip this section entirely — their documents
+    // live on the individual university cards instead.
+    const docsSection = !c.documents.length ? '' :
       '<div class="prog-section"><h4>Documents · ' + pr.done + '/' + pr.total + '</h4>' +
         '<div class="chk-progress-line' + (pr.done === pr.total ? ' done' : '') + '">' +
           '<span class="chk-count">' + pct + '%</span>' +
@@ -1183,7 +1186,12 @@
             '<input type="checkbox" ' + (pr.checks[idx] ? 'checked' : '') + ' data-ctry-chk-idx="' + idx + '">' +
             '<span>' + esc(d) + '</span>' +
           '</label>'
-        ).join('') + '</div></div>' +
+        ).join('') + '</div></div>';
+
+    box.innerHTML = '<div class="ctry-detail">' +
+      '<button class="prog-back" onclick="backToCountries()">← Countries</button>' +
+      '<div class="prog-detail-head"><div><h3>' + c.flag + ' ' + esc(c.name) + '</h3></div></div>' +
+      docsSection +
       '<div class="prog-section"><h4>Universities &amp; Professor Outreach</h4>' +
         '<div id="outreach-host"></div>' +
       '</div>' +
@@ -1243,7 +1251,8 @@
   function renderCountryDocsPending() {
     const box = document.getElementById('country-docs-list');
     if (!box || typeof COUNTRIES === 'undefined') return;
-    const summarized = COUNTRIES.map(c => {
+    // Only countries that actually carry a shared checklist.
+    const summarized = COUNTRIES.filter(c => c.documents.length).map(c => {
       const pr = countryDocsProgress(c);
       const pending = c.documents
         .map((d, idx) => ({ d, idx }))

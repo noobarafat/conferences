@@ -426,6 +426,23 @@ td.has-go .ot-cell { padding-right: 1.6rem; }
 .ot-updt { flex: 1; white-space: pre-wrap; }
 .ot-noupd { font-size: .78rem; color: var(--muted); margin-bottom: .7rem; }
 
+/* ---- optional per-university document list ---- */
+.ot-docs { margin-top: 1rem; padding-top: .85rem; border-top: 1px dashed var(--glass-brd); }
+.ot-docs-head { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
+.ot-docs-title {
+  font-family: 'Space Mono', monospace; font-size: .6rem; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--muted);
+}
+.ot-doclist { list-style: none; margin: .7rem 0 0; }
+.ot-doclist li {
+  display: flex; align-items: center; gap: .55rem; padding: .35rem .3rem;
+  border-radius: 7px; font-size: .82rem; line-height: 1.45; transition: background .15s;
+}
+.ot-doclist li:hover { background: var(--surface2); }
+.ot-doclist li input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
+.ot-doclist li span { flex: 1; }
+.ot-doclist li.done span { color: var(--muted); text-decoration: line-through; }
+
 /* ---- status colours (shared by uni pill and professor select) ---- */
 .ot-pill {
   font-family: 'Space Mono', monospace; font-size: .55rem; letter-spacing: .05em;

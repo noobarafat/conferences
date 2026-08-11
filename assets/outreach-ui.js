@@ -107,7 +107,31 @@ window.OUTREACH_UI = (function () {
         (u.notes ? '<div class="ot-uni-notes">' + esc(u.notes) + '</div>' : '') +
         profGrid(u, kids) +
         '<button class="btn btn-ghost btn-sm" data-act="add-prof" data-id="' + u.id + '">+ Add professor</button>' +
+        docSection(u) +
       '</div>' : '') +
+    '</div>';
+  }
+
+  /* Optional per-university document list — only shows the list once
+     something has been added, so an unused card stays clean. */
+  function docSection(u) {
+    var list = u.docList || [];
+    var done = list.filter(function (d) { return d.done; }).length;
+    return '<div class="ot-docs">' +
+      '<div class="ot-docs-head">' +
+        '<span class="ot-docs-title">Documents' + (list.length ? ' · ' + done + '/' + list.length : '') + '</span>' +
+        '<button class="btn btn-ghost btn-sm" data-act="add-doc" data-id="' + u.id + '">+ Add document</button>' +
+      '</div>' +
+      (list.length
+        ? '<ul class="ot-doclist">' + list.map(function (d, i) {
+            return '<li class="' + (d.done ? 'done' : '') + '">' +
+              '<input type="checkbox" data-act="tog-doc" data-id="' + u.id + '" data-i="' + i + '"' + (d.done ? ' checked' : '') + '>' +
+              '<span>' + esc(d.text) + '</span>' +
+              '<button class="ot-ico" data-act="edit-doc" data-id="' + u.id + '" data-i="' + i + '" title="Edit">✎</button>' +
+              '<button class="ot-ico del" data-act="del-doc" data-id="' + u.id + '" data-i="' + i + '" title="Delete">×</button>' +
+            '</li>';
+          }).join('') + '</ul>'
+        : '') +
     '</div>';
   }
 
@@ -207,6 +231,13 @@ window.OUTREACH_UI = (function () {
       if (!confirm('Delete ' + ((pr && pr.name) || 'this professor') + '?')) return;
       OUTREACH.removeProf(id); return render();
     }
+    if (act === 'add-doc') return docForm(id, null);
+    if (act === 'edit-doc') return docForm(id, parseInt(el.dataset.i, 10));
+    if (act === 'tog-doc') { OUTREACH.toggleUniDoc(id, parseInt(el.dataset.i, 10)); return render(); }
+    if (act === 'del-doc') {
+      if (!confirm('Delete this document?')) return;
+      OUTREACH.removeUniDoc(id, parseInt(el.dataset.i, 10)); return render();
+    }
     if (act === 'add-upd') return updForm(id, null);
     if (act === 'edit-upd') return updForm(id, parseInt(el.dataset.i, 10));
     if (act === 'del-upd') {
@@ -296,6 +327,23 @@ window.OUTREACH_UI = (function () {
         if (id) OUTREACH.updateUni(id, f);
         else OUTREACH.addUni(Object.assign({ country: country }, f));
         if (window.toast) toast(id ? 'University updated' : 'University added', 'ok');
+        render();
+      }
+    });
+  }
+
+  function docForm(uniId, idx) {
+    var u = OUTREACH.uniById(uniId);
+    if (!u) return;
+    var cur = idx == null ? null : (u.docList || [])[idx];
+    openForm({
+      title: cur ? 'Edit document' : 'Add document',
+      sub: u.name,
+      fields: [{ k: 'text', label: 'Document', type: 'text', val: cur ? cur.text : '', req: true, full: true }],
+      onSave: function (f) {
+        if (!f.text) return;
+        if (cur) OUTREACH.editUniDoc(uniId, idx, f.text);
+        else OUTREACH.addUniDoc(uniId, f.text);
         render();
       }
     });

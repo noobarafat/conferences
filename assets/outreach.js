@@ -22,7 +22,7 @@ window.OUTREACH = (function () {
   var LS_UNI = 'outreach_unis_v2';
   var LS_PROF = 'outreach_profs_v2';
 
-  var UNI_FIELDS = ['id', 'country', 'name', 'location', 'website', 'status', 'notes'];
+  var UNI_FIELDS = ['id', 'country', 'name', 'location', 'website', 'status', 'notes', 'documents'];
   var PROF_FIELDS = ['id', 'uniId', 'uniName', 'name', 'email', 'mobile', 'subject', 'status', 'updates', 'notes'];
 
   var UNI_STATUS = ['Researching', 'Shortlisted', 'Applied', 'Accepted', 'Rejected'];
@@ -46,7 +46,13 @@ window.OUTREACH = (function () {
   }
 
   /* Updates live in one cell as  YYYY-MM-DD::text | YYYY-MM-DD::text
-     so the Sheet stays readable and hand-editable. */
+     so the Sheet stays readable and hand-editable. A literal "|" typed by
+     the user would otherwise split one entry into two, so the delimiter is
+     escaped on the way in and restored on the way out. */
+  var PIPE = '&#124;';
+  function encPipe(s) { return String(s == null ? '' : s).replace(/\|/g, PIPE); }
+  function decPipe(s) { return String(s == null ? '' : s).split(PIPE).join('|'); }
+
   function parseUpdates(raw) {
     if (Array.isArray(raw)) return raw;
     if (!raw) return [];
@@ -54,11 +60,30 @@ window.OUTREACH = (function () {
       var s = chunk.trim();
       if (!s) return null;
       var i = s.indexOf('::');
-      return i === -1 ? { date: '', text: s } : { date: s.slice(0, i).trim(), text: s.slice(i + 2).trim() };
+      return i === -1
+        ? { date: '', text: decPipe(s) }
+        : { date: s.slice(0, i).trim(), text: decPipe(s.slice(i + 2).trim()) };
     }).filter(Boolean);
   }
   function joinUpdates(list) {
-    return (list || []).map(function (u) { return (u.date || '') + '::' + (u.text || ''); }).join(' | ');
+    return (list || []).map(function (u) { return (u.date || '') + '::' + encPipe(u.text); }).join(' | ');
+  }
+
+  /* Per-university documents share the same one-cell encoding, using a
+     0/1 done flag instead of a date:  text::1 | text::0  */
+  function parseDocs(raw) {
+    if (Array.isArray(raw)) return raw;
+    if (!raw) return [];
+    return String(raw).split('|').map(function (chunk) {
+      var s = chunk.trim();
+      if (!s) return null;
+      var i = s.lastIndexOf('::');
+      if (i === -1) return { text: decPipe(s), done: false };
+      return { text: decPipe(s.slice(0, i).trim()), done: s.slice(i + 2).trim() === '1' };
+    }).filter(Boolean);
+  }
+  function joinDocs(list) {
+    return (list || []).map(function (d) { return encPipe(d.text) + '::' + (d.done ? '1' : '0'); }).join(' | ');
   }
 
   function normUni(r) {
@@ -66,6 +91,7 @@ window.OUTREACH = (function () {
     UNI_FIELDS.forEach(function (k) { o[k] = r[k] == null ? '' : String(r[k]); });
     if (!o.id) o.id = uuid();
     if (!o.status) o.status = 'Researching';
+    o.docList = parseDocs(o.documents);
     return o;
   }
   function normProf(r) {
@@ -175,7 +201,8 @@ window.OUTREACH = (function () {
   function updateUni(id, rec) {
     var u = uniById(id); if (!u) return null;
     var renamed = rec.name != null && rec.name !== u.name;
-    Object.assign(u, normUni(Object.assign({}, u, rec, { id: id })));
+    if (rec.docList) rec.documents = joinDocs(rec.docList);
+    Object.assign(u, normUni(Object.assign({}, rowOf(u, UNI_FIELDS), rec, { id: id })));
     if (renamed) {
       profsFor(id).forEach(function (p) { p.uniName = u.name; queue(PROF_TAB, p, PROF_FIELDS); });
     }
@@ -220,6 +247,34 @@ window.OUTREACH = (function () {
     profs = profs.filter(function (p) { return p.id !== id; });
     emit();
     push(PROF_TAB, 'delete', id);
+  }
+
+  /* ---------- per-university documents (optional) ---------- */
+  function addUniDoc(uniId, text) {
+    var u = uniById(uniId); if (!u || !text) return null;
+    var list = (u.docList || []).slice();
+    list.push({ text: text, done: false });
+    return updateUni(uniId, { docList: list });
+  }
+  function toggleUniDoc(uniId, idx) {
+    var u = uniById(uniId); if (!u) return null;
+    var list = (u.docList || []).slice();
+    if (!list[idx]) return null;
+    list[idx] = { text: list[idx].text, done: !list[idx].done };
+    return updateUni(uniId, { docList: list });
+  }
+  function editUniDoc(uniId, idx, text) {
+    var u = uniById(uniId); if (!u) return null;
+    var list = (u.docList || []).slice();
+    if (!list[idx]) return null;
+    list[idx] = { text: text, done: list[idx].done };
+    return updateUni(uniId, { docList: list });
+  }
+  function removeUniDoc(uniId, idx) {
+    var u = uniById(uniId); if (!u) return null;
+    var list = (u.docList || []).slice();
+    list.splice(idx, 1);
+    return updateUni(uniId, { docList: list });
   }
 
   /* ---------- email updates ---------- */
@@ -270,13 +325,14 @@ window.OUTREACH = (function () {
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
   function exportCsv(country) {
-    var head = ['University', 'Location', 'Website', 'Uni Status', 'Professor', 'Email', 'Mobile', 'Subject', 'Status', 'Email Updates', 'Notes'];
+    var head = ['University', 'Location', 'Website', 'Uni Status', 'Uni Documents', 'Professor', 'Email', 'Mobile', 'Subject', 'Status', 'Email Updates', 'Notes'];
     var body = [];
     unisFor(country).forEach(function (u) {
+      var docs = (u.docList || []).map(function (d) { return (d.done ? '[x] ' : '[ ] ') + d.text; }).join(' ; ');
       var kids = profsFor(u.id);
-      if (!kids.length) { body.push([u.name, u.location, u.website, u.status, '', '', '', '', '', '', u.notes]); return; }
+      if (!kids.length) { body.push([u.name, u.location, u.website, u.status, docs, '', '', '', '', '', '', u.notes]); return; }
       kids.forEach(function (p) {
-        body.push([u.name, u.location, u.website, u.status, p.name, p.email, p.mobile, p.subject, p.status,
+        body.push([u.name, u.location, u.website, u.status, docs, p.name, p.email, p.mobile, p.subject, p.status,
           (p.updateList || []).map(function (x) { return x.date + ' ' + x.text; }).join(' ; '), p.notes]);
       });
     });
@@ -306,6 +362,7 @@ window.OUTREACH = (function () {
     unisFor: unisFor, profsFor: profsFor, profsForCountry: profsForCountry,
     uniById: uniById, profById: profById, stats: stats,
     addUni: addUni, updateUni: updateUni, removeUni: removeUni,
+    addUniDoc: addUniDoc, toggleUniDoc: toggleUniDoc, editUniDoc: editUniDoc, removeUniDoc: removeUniDoc,
     addProf: addProf, updateProf: updateProf, removeProf: removeProf, setProfCell: setProfCell,
     addUpdate: addUpdate, editUpdate: editUpdate, removeUpdate: removeUpdate,
     exportCsv: exportCsv, today: today
