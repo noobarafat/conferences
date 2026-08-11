@@ -364,17 +364,30 @@
   }
 
 </style>
+<!-- pro visual layer: loaded last so it wins over the rules above -->
+<link rel="stylesheet" href="assets/ui-pro.css">
 </head>
 <body>
+
+<div id="boot"><div class="boot-orb"></div><div class="boot-txt">Education Dashboard</div></div>
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
 
 <header>
   <div class="header-top">
     <div>
       <p class="header-label">Education Dashboard · Bangladesh · 2026–2027</p>
       <h1>Education <span>Dashboard</span></h1>
-      <p class="header-sub">Conferences, university applications, documents and research — all in one place.</p>
+      <p class="greeting" id="greeting">Welcome back.</p>
+      <p class="greeting-sub" id="greeting-sub"></p>
     </div>
-    <div class="today-badge" aria-live="polite">Today<strong id="today-date">—</strong><span class="today-time" id="current-time">—</span></div>
+    <div>
+      <div class="today-badge" aria-live="polite">Today<strong id="today-date">—</strong><span class="today-time" id="current-time">—</span></div>
+      <div class="header-tools">
+        <button class="tool-btn" id="palette-btn" title="Search everything">🔍 <span>Search</span> <kbd>⌘K</kbd></button>
+        <button class="tool-btn" id="theme-btn" title="Toggle theme">🌙<span>Dark</span></button>
+        <button class="tool-btn" id="shortcut-btn" title="Keyboard shortcuts"><kbd>?</kbd></button>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -385,6 +398,7 @@
   <button class="tab-btn" data-tab="scholarships" onclick="switchTab('scholarships',this)"><span class="tab-ico">🎓</span>Scholarships</button>
   <button class="tab-btn" data-tab="docs" onclick="switchTab('docs',this)"><span class="tab-ico">📁</span>Documents</button>
   <button class="tab-btn" data-tab="research" onclick="switchTab('research',this)"><span class="tab-ico">🔬</span>Research</button>
+  <span id="tab-underline"></span>
 </nav>
 
 <!-- ============ TAB: OVERVIEW ============ -->
@@ -395,6 +409,7 @@
       <p>Everything at a glance — papers, applications and documents.</p>
     </div>
   </div>
+  <div id="ov-hero"></div>
   <div class="stat-row" id="ov-stats"></div>
   <div class="stat-row" id="ov-deadlines"></div>
   <div id="ov-priority"></div>
@@ -1703,5 +1718,37 @@
     });
   })();
 </script>
+
+<!-- ============ PRO LAYER: palette / shortcuts / toasts / confetti ============ -->
+<div id="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+  <div class="pal-box">
+    <div class="pal-input-wrap">
+      <span>🔍</span>
+      <input id="pal-input" type="text" placeholder="Search tabs, programmes, countries, conferences…" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="pal-results" id="pal-results"></div>
+    <div class="pal-foot">
+      <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+      <span><kbd>↵</kbd> open</span>
+      <span><kbd>esc</kbd> close</span>
+    </div>
+  </div>
+</div>
+
+<div id="shortcuts" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="sc-box">
+    <h3>⌨️ Keyboard shortcuts</h3>
+    <div class="sc-row"><b>Search everything</b><span><kbd>Ctrl</kbd> / <kbd>⌘</kbd> + <kbd>K</kbd></span></div>
+    <div class="sc-row"><b>Switch tab</b><span><kbd>1</kbd> … <kbd>6</kbd></span></div>
+    <div class="sc-row"><b>Toggle theme</b><span><kbd>T</kbd></span></div>
+    <div class="sc-row"><b>This help sheet</b><span><kbd>?</kbd></span></div>
+    <div class="sc-row"><b>Close any overlay</b><span><kbd>Esc</kbd></span></div>
+  </div>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script src="assets/ui-pro.js"></script>
 </body>
 </html>
