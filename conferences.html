@@ -397,6 +397,8 @@
   </div>
   <div class="stat-row" id="ov-stats"></div>
   <div class="stat-row" id="ov-deadlines"></div>
+  <div id="ov-priority"></div>
+  <div id="ov-quicklinks"></div>
   <div style="height:2.5rem"></div>
 </section>
 
@@ -765,6 +767,9 @@
     ],
     'ICCIT 2026': [
       'AI Tool Adoption Among Software Developers: A Large-Scale Predictive Framework with SHAP Explainability and Digital Divide Analysis'
+    ],
+    'WIECON-ECE 2026': [
+      'UERAF: A Unified Framework for E-Commerce Return Prediction, Root Cause Analysis, and Revenue Impact Simulation'
     ]
   };
 
@@ -1575,7 +1580,6 @@
   }
   function renderOverview() {
     const uni = load('edu_uni', []);
-    const docs = load('edu_docs', []);
     const research = load('edu_research', []);
 
     const papers = allPapers();
@@ -1583,14 +1587,25 @@
     const papersSubmitted = papers.filter(p => submittedSet.includes(p.status)).length;
     const papersPublished = papers.filter(p => p.status === 'Published').length;
     const uniApplied = uni.filter(u => u.status !== 'Researching').length;
-    const docsReady = docs.filter(d => d.status === 'Ready' || d.status === 'Notarized').length;
-    const docsPct = docs.length ? Math.round((docsReady / docs.length) * 100) : 0;
+    const docStats = allDocsStats();
+
+    const erasmusApplied = (typeof ERASMUS_PROGRAMS !== 'undefined')
+      ? ERASMUS_PROGRAMS.filter(p => p._status && p._status !== 'researching').length : 0;
+    const erasmusTotal = (typeof ERASMUS_PROGRAMS !== 'undefined') ? ERASMUS_PROGRAMS.length : 0;
+
+    let ctryReady = 0, ctryTotal = 0, ctryUnis = 0;
+    if (typeof COUNTRIES !== 'undefined') {
+      COUNTRIES.forEach(c => { const pr = countryDocsProgress(c); ctryReady += pr.done; ctryTotal += pr.total; ctryUnis += getCountryUnis(c.id).length; });
+    }
+    const ctryPct = ctryTotal ? Math.round(ctryReady / ctryTotal * 100) : 0;
 
     document.getElementById('ov-stats').innerHTML = [
       { l: 'Papers Submitted', v: papersSubmitted, c: 'stat-amber', s: 'submitted / under review', tab: 'research' },
       { l: 'Papers Published', v: papersPublished, c: 'stat-violet', s: 'of ' + papers.length + ' total', tab: 'research' },
       { l: 'Uni Applications', v: uniApplied, c: 'stat-green', s: 'of ' + uni.length + ' targets', tab: 'uni' },
-      { l: 'Documents Ready', v: docsPct + '%', c: 'stat-amber', s: docsReady + ' / ' + docs.length + ' ready', tab: 'docs' }
+      { l: 'Erasmus Progress', v: erasmusApplied + '/' + erasmusTotal, c: 'stat-violet', s: 'applied or beyond', tab: 'scholarships' },
+      { l: 'Country Docs', v: ctryPct + '%', c: 'stat-green', s: ctryUnis + ' universities added', tab: 'country' },
+      { l: 'Documents Ready', v: docStats.pct + '%', c: 'stat-amber', s: docStats.ready + ' / ' + docStats.total + ' ready · all sources', tab: 'docs' }
     ].map(t => '<div class="stat-tile" style="cursor:pointer" onclick="gotoTab(\'' + t.tab + '\')">' +
       '<div class="stat-label">' + t.l + '</div>' +
       '<div class="stat-val ' + t.c + '">' + t.v + '</div>' +
@@ -1609,6 +1624,49 @@
         '<div class="stat-val stat-accent" style="font-size:1.3rem">' + cd.txt + '</div>' +
         '<div class="stat-sub">' + (r.ds ? prettyDate(r.ds) + (r.extra ? ' · ' + esc(r.extra) : '') : '—') + '</div></div>';
     }).join('');
+
+    renderOvPriority();
+    renderOvQuickLinks();
+  }
+
+  // Priority-A Erasmus programmes still in "researching" status — the ones
+  // most worth acting on first.
+  function renderOvPriority() {
+    const box = document.getElementById('ov-priority');
+    if (!box) return;
+    if (typeof ERASMUS_PROGRAMS === 'undefined') { box.innerHTML = ''; return; }
+    const priority = ERASMUS_PROGRAMS.filter(p => p.priorityTier.startsWith('A') && (!p._status || p._status === 'researching'));
+    if (!priority.length) { box.innerHTML = ''; return; }
+    box.innerHTML =
+      '<p class="section-label" style="margin:2.2rem 3rem 0">Priority focus · top-tier Erasmus programmes not yet applied</p>' +
+      '<div class="entry-list">' + priority.map(p => {
+        const pr = docsProgress(p);
+        return '<div class="entry" style="cursor:pointer" onclick="gotoTab(\'scholarships\');openScholarshipDetail(\'' + p.id + '\')">' +
+          '<div class="entry-top"><div>' +
+            '<div class="entry-title">' + esc(p.shortName) + '</div>' +
+            '<div class="entry-meta"><span>' + p.flag + ' ' + esc(p.country) + '</span><span>📋 ' + pr.done + '/' + pr.total + ' docs</span></div>' +
+          '</div><span class="pill pill-blue">' + esc(p.priorityTier) + '</span></div>' +
+        '</div>';
+      }).join('') + '</div>';
+  }
+
+  function renderOvQuickLinks() {
+    const box = document.getElementById('ov-quicklinks');
+    if (!box) return;
+    const links = [
+      { ico: '🎓', title: 'Erasmus Mundus', sub: 'Browse 7 programmes', tab: 'scholarships' },
+      { ico: '🌍', title: 'Countries', sub: 'Docs & target universities', tab: 'country' },
+      { ico: '📁', title: 'Documents', sub: 'Everything pending, in one place', tab: 'docs' }
+    ];
+    box.innerHTML =
+      '<p class="section-label" style="margin:2.2rem 3rem 0">Quick links</p>' +
+      '<div class="stat-row">' + links.map(l =>
+        '<div class="stat-tile" style="cursor:pointer" onclick="gotoTab(\'' + l.tab + '\')">' +
+          '<div style="font-size:1.6rem;margin-bottom:.4rem">' + l.ico + '</div>' +
+          '<div class="stat-label" style="font-size:.78rem;text-transform:none;letter-spacing:0;color:var(--text);font-weight:600">' + l.title + '</div>' +
+          '<div class="stat-sub">' + l.sub + '</div>' +
+        '</div>'
+      ).join('') + '</div>';
   }
   function gotoTab(tab) {
     const btn = document.querySelector('.tab-btn[data-tab="' + tab + '"]');
@@ -1625,12 +1683,13 @@
   renderResearch();
   renderOverview();
   (function restoreTab() {
-    // prefer URL hash (e.g. #tab=research) then fall back to localStorage
+    // Fresh visits always land on Overview. Only an explicit URL hash
+    // (e.g. #tab=research, used by in-page links like "Details") opens
+    // a different tab — no longer remembers the last tab across visits.
     let t = null;
     if (location.hash && location.hash.indexOf('tab=') !== -1) {
       try { t = decodeURIComponent(location.hash.split('tab=')[1]); } catch (e) { t = location.hash.split('tab=')[1]; }
     }
-    if (!t) t = localStorage.getItem('edu_activeTab');
     if (t && document.getElementById('panel-' + t)) {
       const btn = document.querySelector('.tab-btn[data-tab="' + t + '"]');
       if (btn) switchTab(t, btn);
