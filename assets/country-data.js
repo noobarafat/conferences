@@ -36,6 +36,37 @@ const COUNTRIES = [
       'VPD Apply (University Application)',
       'Uni-Assist Evaluation Report'
     ]
+  },
+  {
+    id: 'usa',
+    name: 'USA',
+    flag: '🇺🇸',
+    documents: [
+      "Bachelor's Certificate (BSC)",
+      "Bachelor's Transcript (BSC)",
+      'Higher Secondary Certificate (HSC)',
+      'Higher Secondary Transcript (HSC)',
+      'Secondary School Certificate (SSC)',
+      'Secondary School Transcript (SSC)',
+      'WES / ECE Credential Evaluation Report',
+      'Recommendation Letter (LOR) 1',
+      'Recommendation Letter (LOR) 2',
+      'Recommendation Letter (LOR) 3',
+      'Statement of Purpose (SOP)',
+      'Resume / CV',
+      'GRE Score Report (if required)',
+      'TOEFL / IELTS Score Report',
+      'Passport',
+      'Financial Affidavit of Support',
+      'Bank Statement / Sponsor Bank Statement',
+      'Training Experience / Job Exp / Internship Exp',
+      'Extra Curricular Activities (All Certificates)',
+      'I-20 Form (after admission)',
+      'SEVIS Fee Payment Receipt',
+      'DS-160 Form',
+      'Visa Interview Appointment (VFS/US Embassy)',
+      'Notary (if needed) — not mandatory'
+    ]
   }
 ];
 
