@@ -339,6 +339,32 @@ footer { background: var(--glass); border-top: 1px solid var(--glass-brd); backd
   background: var(--surface2); border-radius: 4px; padding: .08rem .3rem; color: var(--text);
 }
 .ot-warn .mini-btn { margin-left: .4rem; }
+.ot-warn b { color: var(--amber); }
+.ot-setup { line-height: 1.65; }
+.ot-steps { margin: .6rem 0 .8rem 1.1rem; padding: 0; }
+.ot-steps li { margin: .2rem 0; }
+.ot-steps b { color: var(--text); }
+.ot-setup-rows { display: flex; flex-direction: column; gap: .5rem; }
+.ot-setup-row {
+  display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+  background: var(--surface); border: 1px solid var(--glass-brd);
+  border-radius: 9px; padding: .5rem .7rem;
+}
+.ot-tabname {
+  font-family: 'Space Mono', monospace; font-size: .7rem; font-weight: 700;
+  color: var(--accent); background: rgba(79,141,255,.12);
+  border-radius: 5px; padding: .18rem .5rem; white-space: nowrap;
+}
+.ot-headers {
+  flex: 1; min-width: 200px; font-family: 'Space Mono', monospace; font-size: .64rem;
+  color: var(--muted); overflow-x: auto; white-space: nowrap;
+}
+.ot-setup-foot {
+  display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+  margin-top: .8rem; padding-top: .7rem; border-top: 1px dashed rgba(245,166,35,.25);
+  font-size: .74rem;
+}
+.ot-setup-foot .mini-btn { margin-left: 0; }
 
 /* ---- university card ---- */
 .ot-uni {

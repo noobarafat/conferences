@@ -61,6 +61,44 @@ enter the token → you can Add / Edit / Delete rows from the page.
 creates the `Conferences` tab and fills it — no manual Sheet work. Same for any
 future dataset.
 
+> **Auto-create needs a current deployment.** Tab auto-creation lives in
+> `ensureSheet()`. If your deployed script predates it, writes to a new tab fail
+> with `no tab named "…"` and the page falls back to saving on the device only.
+> Fix it either way:
+>
+> - **Permanent:** redeploy `Code.gs` (see *Updating after code changes* below).
+>   Every future tab is then created for you.
+> - **Quick:** add the tab by hand and paste its header row into `A1`.
+
+## Outreach tabs (universities + professors)
+
+The Country tab's professor tracker uses two tabs. If they don't exist yet, the
+page shows a setup box with a **Copy headers** button for each — paste into `A1`
+of a tab with the matching name, then hit **Retry sync** and everything already
+entered uploads.
+
+`Universities`
+
+```
+id | country | name | location | website | status | notes | documents
+```
+
+`Professors`
+
+```
+id | uniId | uniName | name | email | mobile | subject | status | updates | notes
+```
+
+- `uniId` links a professor row to a university row's `id`.
+- `updates` = dated log, entries separated by ` | `, each `YYYY-MM-DD::text`.
+- `documents` = per-university checklist, entries separated by ` | `, each
+  `text::1` (done) or `text::0` (pending).
+- A literal `|` inside your text is stored as `&#124;` so it can't split an entry.
+
+> The header row matters: the backend writes a row by matching column names, so
+> a tab with no headers accepts writes but stores nothing. The page detects that
+> case and tells you.
+
 ## Updating after code changes
 
 If you edit `Code.gs` later: **Deploy → Manage deployments → edit (pencil) →

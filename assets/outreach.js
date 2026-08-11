@@ -138,6 +138,30 @@ window.OUTREACH = (function () {
     });
   }
 
+  /* The backend writes a row by mapping the record onto the tab's header
+     row. A tab created by hand with no headers therefore accepts writes
+     but stores nothing — which looks like success. Probe for that case so
+     the UI can say exactly what is wrong instead of silently losing data. */
+  function verifySetup() {
+    if (!(window.SHEET && SHEET.configured())) { syncState = 'offline'; notify(); return Promise.resolve('offline'); }
+    var probe = { id: '__probe__' };
+    UNI_FIELDS.forEach(function (k) { if (k !== 'id') probe[k] = k === 'name' ? '__probe__' : ''; });
+    return SHEET.create(UNI_TAB, probe).then(function () {
+      return SHEET.get(UNI_TAB);
+    }).then(function (rows) {
+      var landed = rows.some(function (r) { return String(r.id) === '__probe__'; });
+      return SHEET.remove(UNI_TAB, '__probe__').catch(function () {}).then(function () {
+        syncState = landed ? 'ok' : 'no-headers';
+        notify();
+        return syncState;
+      });
+    }).catch(function (err) {
+      syncState = /no tab named/i.test(String(err && err.message)) ? 'no-tab' : 'offline';
+      notify();
+      return syncState;
+    });
+  }
+
   function push(tab, action, payload) {
     if (!sheetOn()) return Promise.resolve(false);
     var call = action === 'create' ? SHEET.create(tab, payload)
@@ -304,6 +328,14 @@ window.OUTREACH = (function () {
   function retrySheet() {
     syncState = 'idle';
     if (!(window.SHEET && SHEET.configured())) { syncState = 'offline'; notify(); return Promise.resolve(false); }
+    // Confirm the tabs exist AND carry a header row before uploading, so a
+    // half-finished setup never silently swallows the local data.
+    return verifySetup().then(function (state) {
+      return state === 'ok' ? uploadLocal() : false;
+    });
+  }
+
+  function uploadLocal() {
     var localU = unis.slice(), localP = profs.slice();
     return Promise.all([SHEET.get(UNI_TAB), SHEET.get(PROF_TAB)]).then(function (res) {
       var haveU = {}, haveP = {};
@@ -357,8 +389,9 @@ window.OUTREACH = (function () {
 
   return {
     UNI_STATUS: UNI_STATUS, PROF_STATUS: PROF_STATUS,
-    onChange: onChange, sync: sync, retrySheet: retrySheet,
+    onChange: onChange, sync: sync, retrySheet: retrySheet, verifySetup: verifySetup,
     syncState: function () { return syncState; },
+    HEADERS: { Universities: UNI_FIELDS, Professors: PROF_FIELDS },
     unisFor: unisFor, profsFor: profsFor, profsForCountry: profsForCountry,
     uniById: uniById, profById: profById, stats: stats,
     addUni: addUni, updateUni: updateUni, removeUni: removeUni,

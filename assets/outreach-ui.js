@@ -33,6 +33,51 @@ window.OUTREACH_UI = (function () {
     { k: 'subject', label: 'Subject', w: 160 }
   ];
 
+  /* ---------- Sheet setup notice ----------
+     Two ways to make the Sheet accept this data. Creating the tabs by hand
+     is quickest; redeploying Code.gs fixes it permanently for any future
+     tab too. Both are spelled out with one-click header copying. */
+  function setupHTML() {
+    var st = OUTREACH.syncState();
+    if (st === 'ok' || st === 'idle' || st === 'syncing') return '';
+
+    if (st === 'offline') {
+      return '<div class="ot-warn"><b>Offline / Sheet unreachable.</b> Everything is saved on this device and ' +
+        'will upload when the connection is back. <button class="mini-btn" data-act="retry">Retry sync</button></div>';
+    }
+
+    var headerRow = function (tab) { return OUTREACH.HEADERS[tab].join('\t'); };
+    var tabs = ['Universities', 'Professors'];
+
+    var body = st === 'no-headers'
+      ? '<b>Tabs found, but the header row is missing.</b> The backend fills a row by matching column ' +
+        'names, so without headers nothing gets stored. Paste the header row into cell <code>A1</code> of each tab:'
+      : '<b>Saved on this device only</b> — the Sheet has no <code>Universities</code> / <code>Professors</code> tab yet. ' +
+        'Add them once and everything here uploads automatically:';
+
+    return '<div class="ot-warn ot-setup">' + body +
+      '<ol class="ot-steps">' +
+        '<li>Open the Google Sheet → <b>+</b> at the bottom to add a tab → rename it exactly as shown.</li>' +
+        '<li>Click into cell <b>A1</b> of that tab and paste the header row.</li>' +
+        '<li>Come back here and hit <b>Retry sync</b>.</li>' +
+      '</ol>' +
+      '<div class="ot-setup-rows">' +
+        tabs.map(function (t) {
+          return '<div class="ot-setup-row">' +
+            '<code class="ot-tabname">' + t + '</code>' +
+            '<code class="ot-headers">' + esc(OUTREACH.HEADERS[t].join('  ')) + '</code>' +
+            '<button class="mini-btn" data-act="copy-hdr" data-hdr="' + esc(headerRow(t)) + '">Copy headers</button>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+      '<div class="ot-setup-foot">' +
+        '<button class="mini-btn" data-act="retry">Retry sync</button>' +
+        '<span>Prefer a permanent fix? Redeploy <code>backend/Code.gs</code> (Extensions → Apps Script → paste → Deploy) ' +
+        'and it will create any tab it needs on its own.</span>' +
+      '</div>' +
+    '</div>';
+  }
+
   /* ---------- render ---------- */
   function render(mount, countryId) {
     if (mount) host = mount;
@@ -66,11 +111,7 @@ window.OUTREACH_UI = (function () {
           statTile(s.contacted, 'Contacted', 'a') + statTile(s.talking, 'In talks', 'v') +
           statTile(s.replied, 'Replied', 'g') + statTile(s.replyRate + '%', 'Reply rate', 'g') +
         '</div>' +
-        (OUTREACH.syncState() === 'no-tab'
-          ? '<div class="ot-warn">Saving on this device only — the Sheet backend needs ' +
-            '<code>backend/Code.gs</code> redeployed so it can create the <code>Universities</code> and ' +
-            '<code>Professors</code> tabs. <button class="mini-btn" data-act="retry">Retry sync</button></div>'
-          : '') +
+        setupHTML() +
         (shown.length ? shown.map(function (r) { return uniCard(r.u, r.kids); }).join('')
           : '<div class="ot-blank">' + (all.length
               ? 'Nothing matches “' + esc(query) + '”.'
@@ -245,10 +286,24 @@ window.OUTREACH_UI = (function () {
       OUTREACH.removeUpdate(id, parseInt(el.dataset.i, 10)); return render();
     }
     if (act === 'csv') { OUTREACH.exportCsv(country); if (window.toast) toast('CSV exported'); return; }
+    if (act === 'copy-hdr') {
+      var hdr = el.dataset.hdr || '';
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(hdr)
+          .then(function () { if (window.toast) toast('Header row copied — paste into A1', 'ok'); })
+          .catch(function () { if (window.toast) toast('Copy failed — select the text manually', 'warn'); });
+      }
+      return;
+    }
     if (act === 'retry') {
-      if (window.toast) toast('Retrying Sheet sync…');
+      if (window.toast) toast('Checking the Sheet…');
       OUTREACH.retrySheet().then(function (ok) {
-        if (window.toast) toast(ok ? 'Synced to Google Sheet' : 'Backend still needs redeploying', ok ? 'ok' : 'warn');
+        var st = OUTREACH.syncState();
+        var msg = ok ? 'Synced — everything is on the Google Sheet now'
+          : st === 'no-headers' ? 'Tabs found, but A1 header row is still missing'
+            : st === 'no-tab' ? 'Still no Universities / Professors tab'
+              : 'Sheet unreachable — kept locally';
+        if (window.toast) toast(msg, ok ? 'ok' : 'warn');
         render();
       });
       return;
