@@ -498,8 +498,8 @@
 <section class="tab-panel" id="panel-scholarships">
   <div class="panel-head">
     <div>
-      <h2>Erasmus <span>Mundus</span></h2>
-      <p>7 shortlisted joint-Masters programmes — full profile, eligibility, official links and document checklist.</p>
+      <h2>Scholarship <span>Categories</span></h2>
+      <p>Funding tracks I'm applying to. Open a category to see its programmes.</p>
     </div>
   </div>
   <div id="scholarships-view"></div>
@@ -932,7 +932,7 @@
     localStorage.setItem('edu_activeTab', tab);
     try { history.replaceState(null, '', '#tab=' + encodeURIComponent(tab)); } catch (e) { location.hash = 'tab=' + encodeURIComponent(tab); }
     if (tab === 'overview') renderOverview();
-    if (tab === 'scholarships') { scholarshipView = { mode: 'grid', id: null }; renderScholarshipsPanel(); }
+    if (tab === 'scholarships') { scholarshipView = { mode: 'cats', id: null }; renderScholarshipsPanel(); }
     if (tab === 'country') { countryView = { mode: 'grid', id: null }; renderCountryPanel(); }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -1020,7 +1020,7 @@
   const PROG_FUND_LABEL = { full: 'Fully Funded', partial: 'Partial' };
   const PROG_STATUS_LABEL = { researching: 'Researching', applied: 'Applied', accepted: 'Accepted', rejected: 'Rejected' };
   const PROG_LINK_LABEL = { official: 'Official website', apply: 'Apply', requirements: 'Admission requirements', faq: 'FAQ', computingStream: 'Computing stream', admission: 'Admission' };
-  let scholarshipView = { mode: 'grid', id: null };
+  let scholarshipView = { mode: 'cats', id: null };
 
   function progCardHTML(p) {
     const pr = docsProgress(p);
@@ -1041,12 +1041,46 @@
     '</div>';
   }
 
+  // Scholarships has three levels: category cards -> the programmes inside
+  // one category -> a single programme's detail. Mirrors the Country tab.
   function renderScholarshipsPanel() {
     const box = document.getElementById('scholarships-view');
     if (!box || typeof ERASMUS_PROGRAMS === 'undefined') return;
     if (scholarshipView.mode === 'detail') { renderScholarshipDetail(scholarshipView.id); return; }
-    box.innerHTML = '<div class="prog-grid">' + ERASMUS_PROGRAMS.map(progCardHTML).join('') + '</div>';
+    if (scholarshipView.mode === 'grid') {
+      box.innerHTML = '<div class="prog-detail">' +
+        '<button class="prog-back" onclick="backToScholarshipCats()">← Scholarships</button>' +
+        '<div class="prog-detail-head"><div>' +
+          '<h3>🎓 Erasmus Mundus</h3>' +
+          '<div class="prog-detail-sub">' + ERASMUS_PROGRAMS.length + ' shortlisted joint-Masters programmes</div>' +
+        '</div></div>' +
+        '<div class="prog-grid" style="margin:0">' + ERASMUS_PROGRAMS.map(progCardHTML).join('') + '</div>' +
+      '</div>';
+      return;
+    }
+    box.innerHTML = '<div class="ctry-grid">' + scholarshipCatHTML() + '</div>';
   }
+
+  function scholarshipCatHTML() {
+    let done = 0, total = 0;
+    ERASMUS_PROGRAMS.forEach(p => { const pr = docsProgress(p); done += pr.done; total += pr.total; });
+    const funded = ERASMUS_PROGRAMS.filter(p => p.funding === 'full').length;
+    return '<div class="ctry-card" onclick="openScholarshipCat()">' +
+      '<div class="ctry-icon">🎓</div>' +
+      '<div class="prog-name">Erasmus Mundus</div>' +
+      '<div class="prog-about-line" style="margin-top:.5rem">' +
+        ERASMUS_PROGRAMS.length + ' shortlisted joint-Masters programmes — full profile, eligibility, ' +
+        'official links and document checklist.</div>' +
+      '<div class="ctry-stats">' +
+        '<div class="ctry-stat"><b>' + ERASMUS_PROGRAMS.length + '</b><span>Programmes</span></div>' +
+        '<div class="ctry-stat"><b>' + funded + '</b><span>Fully funded</span></div>' +
+        '<div class="ctry-stat"><b>' + done + '/' + total + '</b><span>Docs ready</span></div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function openScholarshipCat() { scholarshipView = { mode: 'grid', id: null }; renderScholarshipsPanel(); }
+  function backToScholarshipCats() { scholarshipView = { mode: 'cats', id: null }; renderScholarshipsPanel(); }
   function openScholarshipDetail(id) { scholarshipView = { mode: 'detail', id }; renderScholarshipsPanel(); }
   function backToScholarships() { scholarshipView = { mode: 'grid', id: null }; renderScholarshipsPanel(); }
 
