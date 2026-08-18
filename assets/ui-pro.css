@@ -482,6 +482,44 @@ td.has-go .ot-cell { padding-right: 1.6rem; }
 .st-rejected { background: rgba(255,95,95,.16); color: var(--red); }
 .st-no-response { background: rgba(122,129,154,.18); color: var(--muted); }
 
+/* ---- database setup banner ---- */
+#db-setup:empty { display: none; }
+.setup-bar {
+  margin: 1.2rem 3rem 0; padding: 1.1rem 1.3rem;
+  background: rgba(245,166,35,.08); border: 1px solid rgba(245,166,35,.32);
+  border-radius: 14px; font-size: .82rem; color: var(--muted); line-height: 1.6;
+}
+.setup-bar.offline { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+.setup-head b { display: block; color: var(--amber); font-size: .95rem; margin-bottom: .2rem; }
+.setup-steps { margin: .7rem 0 .9rem 1.1rem; padding: 0; }
+.setup-steps li { margin: .18rem 0; }
+.setup-steps b, .setup-head span b { color: var(--text); }
+.setup-tabs { display: flex; flex-direction: column; gap: .5rem; }
+.setup-tab {
+  display: flex; align-items: center; gap: .7rem; flex-wrap: wrap;
+  background: var(--surface); border: 1px solid var(--glass-brd);
+  border-radius: 10px; padding: .55rem .8rem;
+}
+.setup-name {
+  font-family: 'Space Mono', monospace; font-size: .72rem; font-weight: 700;
+  color: var(--accent); background: rgba(79,141,255,.12);
+  border-radius: 5px; padding: .2rem .55rem; white-space: nowrap;
+}
+.setup-why { font-size: .74rem; color: var(--muted); white-space: nowrap; }
+.setup-hdrs {
+  flex: 1; min-width: 180px; font-family: 'Space Mono', monospace;
+  font-size: .63rem; color: var(--muted); overflow-x: auto; white-space: nowrap;
+}
+.setup-foot {
+  display: flex; align-items: center; gap: .8rem; flex-wrap: wrap;
+  margin-top: .9rem; padding-top: .8rem; border-top: 1px dashed rgba(245,166,35,.25);
+  font-size: .76rem;
+}
+.setup-foot code, .setup-bar code:not(.setup-name):not(.setup-hdrs) {
+  font-family: 'Space Mono', monospace; font-size: .7rem;
+  background: var(--surface2); border-radius: 4px; padding: .08rem .3rem; color: var(--text);
+}
+
 .paper-outcome {
   font-family: 'Space Mono', monospace; font-size: .6rem; letter-spacing: .04em;
   background: var(--surface2); border: 1px solid var(--glass-brd); border-radius: 7px;

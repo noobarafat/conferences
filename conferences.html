@@ -6,6 +6,7 @@
 <title>BD Conference Deadlines 2026–2027</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="assets/sheet-api.js"></script>
+<script src="assets/db.js"></script>
 <script src="assets/erasmus-data.js"></script>
 <script src="assets/country-data.js"></script>
 <script src="assets/outreach.js"></script>
@@ -938,11 +939,17 @@
   }
 
   // ---- storage helpers ----
+  // Backed by the Sheet through assets/db.js so state follows you between
+  // devices. Falls back to plain localStorage if db.js is missing.
   function load(key, fallback) {
+    if (window.DB) return DB.load(key, fallback);
     try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; }
     catch (e) { return fallback; }
   }
-  function save(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+  function save(key, val) {
+    if (window.DB) return DB.save(key, val);
+    localStorage.setItem(key, JSON.stringify(val));
+  }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
   function prettyDate(ds) {
@@ -1750,6 +1757,20 @@
       if (countryView.mode === 'grid') renderCountryPanel();
     });
   }
+  // State arrives from the Sheet a moment after first paint (and whenever a
+  // change lands from another device) — redraw whatever depends on it.
+  if (window.DB) {
+    DB.onChange(() => {
+      renderUni();
+      renderErasmusDocs();
+      renderCountryDocsPending();
+      renderDocs();
+      renderResearch();
+      renderOverview();
+      if (scholarshipView.mode !== 'cats') renderScholarshipsPanel();
+      if (countryView.mode === 'detail') renderCountryPanel();
+    });
+  }
   renderUni();
   renderErasmusDocs();
   renderCountryDocsPending();
@@ -1811,6 +1832,7 @@
 <canvas id="confetti" aria-hidden="true"></canvas>
 
 <script src="assets/outreach-ui.js"></script>
+<script src="assets/setup-ui.js"></script>
 <script src="assets/ui-pro.js"></script>
 </body>
 </html>

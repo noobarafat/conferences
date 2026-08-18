@@ -50,10 +50,12 @@ const COUNTRIES = [
 
 function countryById(id) { return COUNTRIES.find(c => c.id === id); }
 function countryDocsKey(name) { return 'country_docs::' + name; }
+// Sheet-backed via DB so checkbox state follows you across devices.
 function getCountryDocChecks(name, count) {
-  let arr = [];
-  try { arr = JSON.parse(localStorage.getItem(countryDocsKey(name)) || '[]'); } catch (e) { arr = []; }
-  if (!Array.isArray(arr)) arr = [];
+  let arr = window.DB
+    ? DB.load(countryDocsKey(name), [])
+    : (function () { try { return JSON.parse(localStorage.getItem(countryDocsKey(name)) || '[]'); } catch (e) { return []; } })();
+  if (!Array.isArray(arr)) arr = []; else arr = arr.slice();
   while (arr.length < count) arr.push(false);
   return arr;
 }
@@ -62,7 +64,8 @@ function toggleCountryDocCheck(id, idx) {
   if (!c) return null;
   const arr = getCountryDocChecks(c.name, c.documents.length);
   arr[idx] = !arr[idx];
-  localStorage.setItem(countryDocsKey(c.name), JSON.stringify(arr));
+  if (window.DB) DB.save(countryDocsKey(c.name), arr);
+  else localStorage.setItem(countryDocsKey(c.name), JSON.stringify(arr));
   return arr;
 }
 function countryDocsProgress(c) {

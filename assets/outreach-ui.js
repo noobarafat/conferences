@@ -46,36 +46,11 @@ window.OUTREACH_UI = (function () {
         'will upload when the connection is back. <button class="mini-btn" data-act="retry">Retry sync</button></div>';
     }
 
-    var headerRow = function (tab) { return OUTREACH.HEADERS[tab].join('\t'); };
-    var tabs = ['Universities', 'Professors'];
-
-    var body = st === 'no-headers'
-      ? '<b>Tabs found, but the header row is missing.</b> The backend fills a row by matching column ' +
-        'names, so without headers nothing gets stored. Paste the header row into cell <code>A1</code> of each tab:'
-      : '<b>Saved on this device only</b> — the Sheet has no <code>Universities</code> / <code>Professors</code> tab yet. ' +
-        'Add them once and everything here uploads automatically:';
-
-    return '<div class="ot-warn ot-setup">' + body +
-      '<ol class="ot-steps">' +
-        '<li>Open the Google Sheet → <b>+</b> at the bottom to add a tab → rename it exactly as shown.</li>' +
-        '<li>Click into cell <b>A1</b> of that tab and paste the header row.</li>' +
-        '<li>Come back here and hit <b>Retry sync</b>.</li>' +
-      '</ol>' +
-      '<div class="ot-setup-rows">' +
-        tabs.map(function (t) {
-          return '<div class="ot-setup-row">' +
-            '<code class="ot-tabname">' + t + '</code>' +
-            '<code class="ot-headers">' + esc(OUTREACH.HEADERS[t].join('  ')) + '</code>' +
-            '<button class="mini-btn" data-act="copy-hdr" data-hdr="' + esc(headerRow(t)) + '">Copy headers</button>' +
-          '</div>';
-        }).join('') +
-      '</div>' +
-      '<div class="ot-setup-foot">' +
-        '<button class="mini-btn" data-act="retry">Retry sync</button>' +
-        '<span>Prefer a permanent fix? Redeploy <code>backend/Code.gs</code> (Extensions → Apps Script → paste → Deploy) ' +
-        'and it will create any tab it needs on its own.</span>' +
-      '</div>' +
-    '</div>';
+    // The full walkthrough lives in the banner at the top of the page
+    // (setup-ui.js) so it is not repeated on every country panel.
+    return '<div class="ot-warn"><b>Saved on this device only.</b> ' +
+      'Finish the Sheet setup in the banner at the top of the page to sync universities ' +
+      'and professors across devices. <button class="mini-btn" data-act="retry">Retry sync</button></div>';
   }
 
   /* ---------- render ---------- */

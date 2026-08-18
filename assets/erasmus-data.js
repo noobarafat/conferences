@@ -306,10 +306,21 @@ const ERASMUS_PROGRAMS = [
 
 function programById(id) { return ERASMUS_PROGRAMS.find(p => p.id === id); }
 function docsKey(label) { return 'sch_docs::' + label; }
+
+// Checkbox state goes through DB (Sheet-backed) so it follows you across
+// devices; plain localStorage is the fallback if db.js has not loaded.
+function docsRead(key) {
+  if (window.DB) return DB.load(key, []);
+  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { return []; }
+}
+function docsWrite(key, arr) {
+  if (window.DB) return DB.save(key, arr);
+  localStorage.setItem(key, JSON.stringify(arr));
+}
 function getDocChecks(label, count) {
-  let arr = [];
-  try { arr = JSON.parse(localStorage.getItem(docsKey(label)) || '[]'); } catch (e) { arr = []; }
+  let arr = docsRead(docsKey(label));
   if (!Array.isArray(arr)) arr = [];
+  else arr = arr.slice();
   while (arr.length < count) arr.push(false);
   return arr;
 }
@@ -318,7 +329,7 @@ function toggleDocCheck(id, idx) {
   if (!p) return null;
   const arr = getDocChecks(p.label, p.documents.length);
   arr[idx] = !arr[idx];
-  localStorage.setItem(docsKey(p.label), JSON.stringify(arr));
+  docsWrite(docsKey(p.label), arr);
   return arr;
 }
 function docsProgress(p) {
