@@ -482,6 +482,14 @@ td.has-go .ot-cell { padding-right: 1.6rem; }
 .st-rejected { background: rgba(255,95,95,.16); color: var(--red); }
 .st-no-response { background: rgba(122,129,154,.18); color: var(--muted); }
 
+/* ---- sync status chip ---- */
+.sync-chip { cursor: default; gap: .35rem; }
+.sync-chip.saved { color: var(--green); border-color: rgba(46,204,138,.35); }
+.sync-chip.saving { color: var(--accent); border-color: rgba(79,141,255,.35); }
+.sync-chip.saving::first-letter { animation: syncPulse 1.1s ease-in-out infinite; }
+.sync-chip.local { color: var(--amber); border-color: rgba(245,166,35,.4); }
+@keyframes syncPulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+
 /* ---- database setup banner ---- */
 #db-setup:empty { display: none; }
 .setup-bar {

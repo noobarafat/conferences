@@ -34,6 +34,9 @@ window.OUTREACH = (function () {
   var syncState = 'idle';   // idle | syncing | ok | offline | no-tab
   var pending = {};
   var timer = null;
+  // Rows the Sheet has not confirmed yet, and rows deleted locally awaiting
+  // confirmation. Persisted, so a reload or a crash cannot lose the intent.
+  var pendingUni = {}, pendingProf = {}, tombUni = {}, tombProf = {};
 
   /* ---------- helpers ---------- */
   function uuid() {
@@ -106,10 +109,12 @@ window.OUTREACH = (function () {
     var r = {}; fields.forEach(function (k) { r[k] = o[k] == null ? '' : o[k]; }); return r;
   }
 
+  var LS_Q = 'outreach_queue_v2';
   function save() {
     try {
-      localStorage.setItem(LS_UNI, JSON.stringify(unis));
+      localStorage.setItem(LS_UNI, JSON.stringify(unis.map(function (u) { return rowOf(u, UNI_FIELDS); })));
       localStorage.setItem(LS_PROF, JSON.stringify(profs.map(function (p) { return rowOf(p, PROF_FIELDS); })));
+      localStorage.setItem(LS_Q, JSON.stringify({ pu: pendingUni, pp: pendingProf, tu: tombUni, tp: tombProf }));
     } catch (e) {}
   }
   function emit() { save(); subs.forEach(function (f) { try { f(); } catch (e) {} }); }
@@ -123,19 +128,90 @@ window.OUTREACH = (function () {
     return false;
   }
 
+  /* Merge remote into local without ever discarding something the Sheet has
+     not accepted yet — an edit made offline, or a create whose request
+     failed. Replacing the arrays outright (the old behaviour) meant an empty
+     or lagging tab could erase everything held locally. */
+  function mergeInto(local, remote, normFn, pendingSet, tombSet) {
+    var seen = {}, next = [];
+    remote.forEach(function (r) {
+      if (!r || !r.id) return;
+      var id = String(r.id);
+      seen[id] = true;
+      // Still listed remotely means the delete never took — re-arm it, but
+      // only a few times. Giving up leaves a spare row on the Sheet, which
+      // is far safer than a stuck tombstone deleting a real row forever.
+      if (tombSet[id]) {
+        var tries = (typeof tombSet[id] === 'number' ? tombSet[id] : 0) + 1;
+        if (tries > 3) { delete tombSet[id]; next.push(normFn(r)); return; }
+        tombSet[id] = tries;
+        return;
+      }
+      var mine = local.find(function (x) { return x.id === id; });
+      if (mine && pendingSet[id]) { next.push(mine); return; }   // local edit wins
+      next.push(normFn(r));
+    });
+    local.forEach(function (l) {
+      if (seen[l.id] || tombSet[l.id]) return;
+      next.push(l);
+      if (!pendingSet[l.id]) pendingSet[l.id] = 'create';         // re-queue: never landed
+    });
+    Object.keys(tombSet).forEach(function (id) { if (!seen[id]) delete tombSet[id]; });
+    return next;
+  }
+
   function sync() {
     if (!(window.SHEET && SHEET.configured())) { syncState = 'offline'; return Promise.resolve(false); }
     syncState = 'syncing';
     return Promise.all([SHEET.get(UNI_TAB), SHEET.get(PROF_TAB)]).then(function (res) {
-      unis = res[0].map(normUni);
-      profs = res[1].map(normProf);
+      unis = mergeInto(unis, res[0] || [], normUni, pendingUni, tombUni);
+      profs = mergeInto(profs, res[1] || [], normProf, pendingProf, tombProf);
       syncState = 'ok';
       emit();
+      flushPending();
       return true;
     }).catch(function (err) {
       if (!flagNoTab(err)) { syncState = 'offline'; notify(); }
       return false;
     });
+  }
+
+  /* Retry anything the Sheet has not confirmed. Survives reloads because the
+     queues are persisted alongside the rows. */
+  function flushPending() {
+    if (!sheetOn()) return Promise.resolve(false);
+    var jobs = [];
+    function drain(pendingSet, tombSet, tab, list, fields) {
+      Object.keys(tombSet).forEach(function (id) {
+        if (tombSet[id] !== 'pending' && typeof tombSet[id] !== 'number') return;
+        var attempt = typeof tombSet[id] === 'number' ? tombSet[id] : 0;
+        jobs.push(SHEET.remove(tab, id).then(function () { tombSet[id] = true; save(); })
+          .catch(function (err) {
+            if (flagNoTab(err)) return;
+            if (/id not found/i.test(String(err && err.message))) { delete tombSet[id]; save(); return; }
+            tombSet[id] = attempt;
+          }));
+      });
+      Object.keys(pendingSet).forEach(function (id) {
+        var rec = list.find(function (x) { return x.id === id; });
+        if (!rec) { delete pendingSet[id]; return; }
+        var verb = pendingSet[id];
+        var call = verb === 'create' ? SHEET.create(tab, rowOf(rec, fields)) : SHEET.update(tab, rowOf(rec, fields));
+        jobs.push(call.then(function () { delete pendingSet[id]; save(); }).catch(function (err) {
+          if (flagNoTab(err)) return;
+          // Switch verb only when the row genuinely is not there; creating
+          // after a transient update failure would append a duplicate.
+          if (verb === 'update' && /id not found/i.test(String(err && err.message))) {
+            return SHEET.create(tab, rowOf(rec, fields))
+              .then(function () { delete pendingSet[id]; save(); }).catch(function () {});
+          }
+        }));
+      });
+    }
+    drain(pendingUni, tombUni, UNI_TAB, unis, UNI_FIELDS);
+    drain(pendingProf, tombProf, PROF_TAB, profs, PROF_FIELDS);
+    if (!jobs.length) return Promise.resolve(true);
+    return Promise.all(jobs).then(function () { save(); return true; });
   }
 
   /* The backend writes a row by mapping the record onto the tab's header
@@ -162,26 +238,10 @@ window.OUTREACH = (function () {
     });
   }
 
-  function push(tab, action, payload) {
-    if (!sheetOn()) return Promise.resolve(false);
-    var call = action === 'create' ? SHEET.create(tab, payload)
-      : action === 'update' ? SHEET.update(tab, payload)
-        : SHEET.remove(tab, payload);
-    return call.then(function () { return true; }).catch(function (err) {
-      if (!flagNoTab(err) && window.toast) toast('Sheet save failed — kept locally', 'warn');
-      return false;
-    });
-  }
-
   /* Debounced, so typing in a grid cell is not one request per keystroke. */
-  function queue(tab, obj, fields) {
-    pending[tab + ':' + obj.id] = { tab: tab, row: rowOf(obj, fields) };
+  function scheduleFlush() {
     if (timer) clearTimeout(timer);
-    timer = setTimeout(function () {
-      timer = null;
-      var batch = pending; pending = {};
-      Object.keys(batch).forEach(function (k) { push(batch[k].tab, 'update', batch[k].row); });
-    }, 800);
+    timer = setTimeout(function () { timer = null; flushPending(); }, 900);
   }
 
   /* ---------- reads ---------- */
@@ -215,11 +275,17 @@ window.OUTREACH = (function () {
     };
   }
 
+  /* Every write marks the row pending and lets flushPending() do the upload,
+     so a failed request is retried instead of being lost. */
+  function markUni(id, verb) { if (pendingUni[id] !== 'create') pendingUni[id] = verb; }
+  function markProf(id, verb) { if (pendingProf[id] !== 'create') pendingProf[id] = verb; }
+
   /* ---------- university writes ---------- */
   function addUni(rec) {
     var u = normUni(Object.assign({ id: uuid() }, rec));
-    unis.push(u); emit();
-    push(UNI_TAB, 'create', rowOf(u, UNI_FIELDS));
+    unis.push(u);
+    pendingUni[u.id] = 'create'; delete tombUni[u.id];
+    emit(); flushPending();
     return u;
   }
   function updateUni(id, rec) {
@@ -228,49 +294,50 @@ window.OUTREACH = (function () {
     if (rec.docList) rec.documents = joinDocs(rec.docList);
     Object.assign(u, normUni(Object.assign({}, rowOf(u, UNI_FIELDS), rec, { id: id })));
     if (renamed) {
-      profsFor(id).forEach(function (p) { p.uniName = u.name; queue(PROF_TAB, p, PROF_FIELDS); });
+      profsFor(id).forEach(function (p) { p.uniName = u.name; markProf(p.id, 'update'); });
     }
-    emit();
-    push(UNI_TAB, 'update', rowOf(u, UNI_FIELDS));
+    markUni(id, 'update');
+    emit(); scheduleFlush();
     return u;
   }
   function removeUni(id) {
     var kids = profsFor(id);
     unis = unis.filter(function (u) { return u.id !== id; });
     profs = profs.filter(function (p) { return p.uniId !== id; });
-    emit();
-    push(UNI_TAB, 'delete', id);
-    kids.forEach(function (p) { push(PROF_TAB, 'delete', p.id); });
+    delete pendingUni[id]; tombUni[id] = 'pending';
+    kids.forEach(function (p) { delete pendingProf[p.id]; tombProf[p.id] = 'pending'; });
+    emit(); flushPending();
   }
 
   /* ---------- professor writes ---------- */
   function addProf(uniId, rec) {
     var u = uniById(uniId);
     var p = normProf(Object.assign({ id: uuid(), uniId: uniId, uniName: u ? u.name : '' }, rec || {}));
-    profs.push(p); emit();
-    push(PROF_TAB, 'create', rowOf(p, PROF_FIELDS));
+    profs.push(p);
+    pendingProf[p.id] = 'create'; delete tombProf[p.id];
+    emit(); flushPending();
     return p;
   }
-  /* Used by the inline grid — saves locally at once, pushes debounced. */
+  /* Used by the inline grid — saves locally at once, uploads debounced. */
   function setProfCell(id, key, value) {
     var p = profById(id); if (!p || p[key] === value) return p;
     p[key] = value;
-    save();
-    queue(PROF_TAB, p, PROF_FIELDS);
+    markProf(id, 'update');
+    save(); scheduleFlush();
     return p;
   }
   function updateProf(id, rec) {
     var p = profById(id); if (!p) return null;
     if (rec.updateList) rec.updates = joinUpdates(rec.updateList);
     Object.assign(p, normProf(Object.assign({}, rowOf(p, PROF_FIELDS), rec, { id: id })));
-    emit();
-    push(PROF_TAB, 'update', rowOf(p, PROF_FIELDS));
+    markProf(id, 'update');
+    emit(); scheduleFlush();
     return p;
   }
   function removeProf(id) {
     profs = profs.filter(function (p) { return p.id !== id; });
-    emit();
-    push(PROF_TAB, 'delete', id);
+    delete pendingProf[id]; tombProf[id] = 'pending';
+    emit(); flushPending();
   }
 
   /* ---------- per-university documents (optional) ---------- */
@@ -336,15 +403,16 @@ window.OUTREACH = (function () {
   }
 
   function uploadLocal() {
-    var localU = unis.slice(), localP = profs.slice();
+    // Queue anything the Sheet does not have, then let the shared flush do
+    // the work — it already handles retries and create/update mismatches.
     return Promise.all([SHEET.get(UNI_TAB), SHEET.get(PROF_TAB)]).then(function (res) {
       var haveU = {}, haveP = {};
-      res[0].forEach(function (r) { haveU[r.id] = 1; });
-      res[1].forEach(function (r) { haveP[r.id] = 1; });
-      var jobs = [];
-      localU.forEach(function (u) { if (!haveU[u.id]) jobs.push(push(UNI_TAB, 'create', rowOf(u, UNI_FIELDS))); });
-      localP.forEach(function (p) { if (!haveP[p.id]) jobs.push(push(PROF_TAB, 'create', rowOf(p, PROF_FIELDS))); });
-      return Promise.all(jobs).then(function () { return sync(); });
+      (res[0] || []).forEach(function (r) { haveU[r.id] = 1; });
+      (res[1] || []).forEach(function (r) { haveP[r.id] = 1; });
+      unis.forEach(function (u) { if (!haveU[u.id]) pendingUni[u.id] = 'create'; });
+      profs.forEach(function (p) { if (!haveP[p.id]) pendingProf[p.id] = 'create'; });
+      save();
+      return flushPending().then(function () { return sync(); });
     }).catch(function (err) {
       if (!flagNoTab(err)) { syncState = 'offline'; notify(); }
       return false;
@@ -383,14 +451,29 @@ window.OUTREACH = (function () {
     var cp = JSON.parse(localStorage.getItem(LS_PROF) || '[]');
     if (Array.isArray(cu)) unis = cu.map(normUni);
     if (Array.isArray(cp)) profs = cp.map(normProf);
+    var q = JSON.parse(localStorage.getItem(LS_Q) || '{}') || {};
+    pendingUni = q.pu || {}; pendingProf = q.pp || {};
+    tombUni = q.tu || {}; tombProf = q.tp || {};
   } catch (e) {}
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { sync(); });
   else sync();
+
+  window.addEventListener('online', function () { if (syncState !== 'no-tab') sync(); });
+  // Keep retrying anything the Sheet has not confirmed.
+  setInterval(function () {
+    if (syncState !== 'no-tab' &&
+      (Object.keys(pendingUni).length || Object.keys(pendingProf).length ||
+        Object.keys(tombUni).length || Object.keys(tombProf).length)) flushPending();
+  }, 60000);
 
   return {
     UNI_STATUS: UNI_STATUS, PROF_STATUS: PROF_STATUS,
     onChange: onChange, sync: sync, retrySheet: retrySheet, verifySetup: verifySetup,
     syncState: function () { return syncState; },
+    pending: function () {
+      return Object.keys(pendingUni).length + Object.keys(pendingProf).length +
+        Object.keys(tombUni).length + Object.keys(tombProf).length;
+    },
     HEADERS: { Universities: UNI_FIELDS, Professors: PROF_FIELDS },
     unisFor: unisFor, profsFor: profsFor, profsForCountry: profsForCountry,
     uniById: uniById, profById: profById, stats: stats,

@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="assets/sheet-api.js"></script>
 <script src="assets/db.js"></script>
+<script src="assets/sync-core.js"></script>
 <script src="assets/papers.js"></script>
 <script src="assets/erasmus-data.js"></script>
 <script src="assets/country-data.js"></script>
@@ -389,6 +390,7 @@
         <button class="tool-btn" id="palette-btn" title="Search everything">🔍 <span>Search</span> <kbd>⌘K</kbd></button>
         <button class="tool-btn" id="theme-btn" title="Toggle theme">🌙<span>Dark</span></button>
         <button class="tool-btn" id="shortcut-btn" title="Keyboard shortcuts"><kbd>?</kbd></button>
+        <span class="tool-btn sync-chip" id="sync-chip" title="Sync status">●<span>—</span></span>
       </div>
     </div>
   </div>
@@ -835,7 +837,7 @@
       list.length + ' papers across ' + Object.keys(venues).length + ' venues';
   }
 
-  function openPapers() { document.getElementById('papers-modal').classList.add('open'); }
+  function openPapers() { renderModal(); document.getElementById('papers-modal').classList.add('open'); }
   function closePapers() { document.getElementById('papers-modal').classList.remove('open'); }
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closePapers(); });
 
@@ -920,7 +922,8 @@
     if (ov && ov.classList.contains('active') && typeof renderOverview === 'function') renderOverview();
   }
 
-  renderModal();
+  // renderModal() is called when the modal opens (it needs PAPERS and
+  // paperPill, both defined further down) so it is always current.
   loadConferences();
   refreshLiveData();
   setInterval(refreshLiveData, 1000);
@@ -1846,6 +1849,7 @@
 
 <script src="assets/outreach-ui.js"></script>
 <script src="assets/setup-ui.js"></script>
+<script src="assets/sync-status.js"></script>
 <script src="assets/ui-pro.js"></script>
 </body>
 </html>
