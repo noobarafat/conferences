@@ -1419,10 +1419,24 @@
   ];
 
   // virtual papers auto-linked from conference submissions (submitted → under review)
+  // Conference-linked papers start at "Under Review". Outcomes (accepted,
+  // rejected, …) are recorded here, keyed by title, so the verdict survives
+  // without editing the submissions map.
+  function paperOutcomes() { return load('edu_paper_outcome', {}); }
+  function setPaperOutcome(title, status) {
+    const m = paperOutcomes();
+    if (!status || status === 'Under Review') delete m[title]; else m[title] = status;
+    save('edu_paper_outcome', m);
+    renderResearch();
+    renderOverview();
+  }
   function confLinkedPapers() {
     const out = [];
+    const outcome = paperOutcomes();
     Object.keys(submissions).forEach(conf => {
-      submissions[conf].forEach(title => out.push({ title, venue: conf, status: 'Under Review', source: 'conf' }));
+      submissions[conf].forEach(title => out.push({
+        title, venue: conf, status: outcome[title] || 'Under Review', source: 'conf'
+      }));
     });
     return out;
   }
@@ -1496,7 +1510,14 @@
     el.innerHTML = listRows.map(p => {
       const locked = p.source !== 'user';
       const actions = locked
-        ? (p.link ? '<a class="icon-btn" href="' + esc(p.link) + '" target="_blank" rel="noopener" title="Open">↗</a>' : '')
+        ? (p.source === 'conf'
+            ? '<select class="paper-outcome" onchange="setPaperOutcome(this.dataset.t, this.value)" ' +
+              'data-t="' + esc(p.title) + '" title="Record the outcome">' +
+              ['Under Review', 'Accepted', 'Published', 'Rejected'].map(s =>
+                '<option value="' + s + '"' + (s === p.status ? ' selected' : '') + '>' + s + '</option>').join('') +
+              '</select>'
+            : '') +
+          (p.link ? '<a class="icon-btn" href="' + esc(p.link) + '" target="_blank" rel="noopener" title="Open">↗</a>' : '')
         : '<button class="icon-btn" onclick="editPaper(\'' + p.id + '\')" title="Edit">✎</button>' +
           '<button class="icon-btn del" onclick="delEntry(\'edu_research\',\'' + p.id + '\',renderResearch)" title="Delete">🗑</button>';
       return '<div class="entry"><div class="entry-top"><div>' +

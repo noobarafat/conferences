@@ -482,6 +482,14 @@ td.has-go .ot-cell { padding-right: 1.6rem; }
 .st-rejected { background: rgba(255,95,95,.16); color: var(--red); }
 .st-no-response { background: rgba(122,129,154,.18); color: var(--muted); }
 
+.paper-outcome {
+  font-family: 'Space Mono', monospace; font-size: .6rem; letter-spacing: .04em;
+  background: var(--surface2); border: 1px solid var(--glass-brd); border-radius: 7px;
+  color: var(--muted); padding: .28rem .45rem; cursor: pointer;
+}
+.paper-outcome:hover { border-color: var(--accent); color: var(--accent); }
+.paper-outcome:focus { outline: none; border-color: var(--accent); }
+
 .ot-blank {
   text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: .85rem;
   background: var(--glass); border: 1px dashed var(--glass-brd); border-radius: 14px;
