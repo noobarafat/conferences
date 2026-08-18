@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="assets/sheet-api.js"></script>
 <script src="assets/db.js"></script>
+<script src="assets/papers.js"></script>
 <script src="assets/erasmus-data.js"></script>
 <script src="assets/country-data.js"></script>
 <script src="assets/outreach.js"></script>
@@ -756,7 +757,7 @@
   }
 
   // ---- submitted papers ----
-  const submissions = {
+  const SUBMISSION_SEED = {
     'BECITHCON 2026': [
       'Mortality Trend Analysis and Risk Factor Correlation: A Data-Driven Study Using WHO Global Health Data'
     ],
@@ -794,40 +795,44 @@
     return s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
 
+  // Conference cards show whatever the paper store says is currently with
+  // that conference, so changing a paper's status or venue updates the card.
   function injectSubmissions() {
-    let total = 0;
+    if (!window.PAPERS) return;
+    document.querySelectorAll('.card .submitted').forEach(el => el.remove());
     document.querySelectorAll('.card').forEach(card => {
       const link = card.querySelector('.conf-name a');
       if (!link) return;
-      const papers = submissions[link.textContent.trim()];
-      if (!papers) return;
-      card.classList.add('has-submission');
+      const papers = PAPERS.forVenue(link.textContent.trim());
+      card.classList.toggle('has-submission', papers.length > 0);
+      if (!papers.length) return;
       const block = document.createElement('div');
       block.className = 'submitted';
       const n = papers.length;
       block.innerHTML = '<div class="submitted-head">Submitted · ' + n + ' paper' + (n > 1 ? 's' : '') + '</div>' +
-        papers.map(p => '<div class="paper-item">' + esc(p) + '</div>').join('');
+        papers.map(p => '<div class="paper-item">' + esc(p.title) +
+          '<span class="paper-item-status ' + (paperPill[p.status] || 'pill-muted') + '">' + esc(p.status) + '</span></div>').join('');
       const bar = card.querySelector('.conf-date-bar');
       card.insertBefore(block, bar);
-      total += n;
     });
     const pc = document.getElementById('paper-count');
-    if (pc) pc.textContent = total;
+    if (pc) pc.textContent = PAPERS.counts().live;
   }
 
   function renderModal() {
-    const rows = [];
-    let i = 0;
-    Object.keys(submissions).forEach(conf => {
-      submissions[conf].forEach(title => {
-        i++;
-        rows.push('<div class="paper-row"><div class="paper-num">' + i + '</div>' +
-          '<div class="paper-info"><div class="paper-conf">' + esc(conf) + '</div>' +
-          '<div class="paper-title">' + esc(title) + '</div></div></div>');
-      });
-    });
-    document.getElementById('modal-body').innerHTML = rows.join('');
-    document.getElementById('modal-sub').textContent = i + ' papers across ' + Object.keys(submissions).length + ' conferences';
+    if (!window.PAPERS) return;
+    const list = PAPERS.all().slice().sort((a, b) =>
+      String(a.venue).localeCompare(String(b.venue)) || String(a.title).localeCompare(String(b.title)));
+    const venues = {};
+    list.forEach(p => { if (p.venue) venues[p.venue] = 1; });
+    document.getElementById('modal-body').innerHTML = list.map((p, i) =>
+      '<div class="paper-row"><div class="paper-num">' + (i + 1) + '</div>' +
+      '<div class="paper-info"><div class="paper-conf">' + esc(p.venue || 'No venue set') +
+        ' <span class="pill ' + (paperPill[p.status] || 'pill-muted') + '">' + esc(p.status) + '</span></div>' +
+      '<div class="paper-title">' + esc(p.title) + '</div></div></div>').join('') ||
+      '<div class="paper-row"><div class="paper-info">No papers yet.</div></div>';
+    document.getElementById('modal-sub').textContent =
+      list.length + ' papers across ' + Object.keys(venues).length + ' venues';
   }
 
   function openPapers() { document.getElementById('papers-modal').classList.add('open'); }
@@ -1376,13 +1381,13 @@
   }
 
   // ======================= RESEARCH =======================
-  const PAPER_STATUS = ['Writing', 'Submitted', 'Under Review', 'Accepted', 'Published', 'Rejected'];
+  // Status list lives in assets/papers.js (PAPERS.STATUS); this maps it to pills.
   const paperPill = { 'Writing': 'pill-muted', 'Submitted': 'pill-blue', 'Under Review': 'pill-amber', 'Accepted': 'pill-green', 'Published': 'pill-violet', 'Rejected': 'pill-red' };
 
   const RG_PROFILE = 'https://www.researchgate.net/profile/K-M-Arafat-Islam';
 
   /* 8 published papers. venue = conference/journal (fill real names). */
-  const PUBLISHED_PAPERS = [
+  const PUBLISHED_SEED = [
     {
       title: 'Early Detection of Mental Health Disorders Among Private University Students in Bangladesh Using Machine Learning-Based Behavioral Data Analysis',
       venue: 'Int\'l Conf on Intelligent Data Analysis and Applications (IDAA 2025), Atlantis Press', year: '2026',
@@ -1425,46 +1430,28 @@
     }
   ];
 
-  // virtual papers auto-linked from conference submissions (submitted → under review)
-  // Conference-linked papers start at "Under Review". Outcomes (accepted,
-  // rejected, …) are recorded here, keyed by title, so the verdict survives
-  // without editing the submissions map.
-  function paperOutcomes() { return load('edu_paper_outcome', {}); }
-  function setPaperOutcome(title, status) {
-    const m = paperOutcomes();
-    if (!status || status === 'Under Review') delete m[title]; else m[title] = status;
-    save('edu_paper_outcome', m);
-    renderResearch();
-    renderOverview();
-  }
-  function confLinkedPapers() {
+  /* First-run seed: everything that used to be hardcoded, turned into real
+     records the store owns from then on. Runs once (PAPERS.seed guards on
+     an empty store plus a DB flag), after which these lists are unused. */
+  function paperSeed() {
     const out = [];
-    const outcome = paperOutcomes();
-    Object.keys(submissions).forEach(conf => {
-      submissions[conf].forEach(title => out.push({
-        title, venue: conf, status: outcome[title] || 'Under Review', source: 'conf'
-      }));
+    Object.keys(SUBMISSION_SEED).forEach(conf => {
+      SUBMISSION_SEED[conf].forEach(title => out.push({ title, venue: conf, status: 'Under Review' }));
     });
+    PUBLISHED_SEED.forEach(p => out.push({
+      title: p.title, venue: p.venue || '', status: 'Published',
+      year: p.year || '', link: p.link || RG_PROFILE
+    }));
     return out;
   }
-  function publishedLinkedPapers() {
-    return PUBLISHED_PAPERS.map(p => ({
-      title: p.title, venue: p.venue || '', status: 'Published',
-      year: p.year || '', link: p.link || RG_PROFILE, source: 'rg'
-    }));
-  }
-  /* which index/database a paper lives in, derived from its source link */
-  function paperIndex(link) {
-    if (/ieeexplore\.ieee\.org/.test(link)) return { cls: 'idx-ieee', accent: '#4fa8e8', label: 'IEEE Xplore', ico: '⚡' };
-    if (/link\.springer\.com/.test(link)) return { cls: 'idx-springer', accent: '#f5c518', label: 'Springer', ico: '📗' };
-    if (/books\.google\.com|atlantis-press/.test(link)) return { cls: 'idx-atlantis', accent: '#2ecc8a', label: 'Atlantis Press', ico: '📘' };
-    return { cls: 'idx-rg', accent: '#7c5cfc', label: 'ResearchGate', ico: '🎓' };
-  }
   function renderPublishedCards() {
-    document.getElementById('pub-count').textContent = PUBLISHED_PAPERS.length;
-    document.getElementById('pub-grid').innerHTML = PUBLISHED_PAPERS.map((p, i) => {
+    const pubs = PAPERS.published();
+    document.getElementById('pub-count').textContent = pubs.length;
+    const grid = document.getElementById('pub-grid');
+    if (!pubs.length) { grid.innerHTML = emptyState('📄', 'Nothing published yet. Set a paper to “Published” and it appears here.'); return; }
+    grid.innerHTML = pubs.map((p, i) => {
       const link = p.link || RG_PROFILE;
-      const idx = paperIndex(link);
+      const idx = PAPERS.indexOf(link);
       return '<div class="pub-card" style="--pub-accent:' + idx.accent + '">' +
         '<div class="pub-top"><div class="pub-top-l"><span class="pub-idx">' + String(i + 1).padStart(2, '0') + '</span>' +
         '<span class="pub-index-badge ' + idx.cls + '">' + idx.ico + ' ' + idx.label + '</span></div>' +
@@ -1473,35 +1460,38 @@
         '<div class="pub-foot">' +
         '<div class="pub-venue">🏛️ <span>' + (p.venue ? esc(p.venue) : '<i style="opacity:.6">venue not set</i>') +
         (p.year ? ' · ' + esc(p.year) : '') + '</span></div>' +
-        '<div class="pub-link-row"><a href="' + esc(link) + '" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:none;font-size:.72rem">🔗 View source ↗</a></div>' +
+        '<div class="pub-link-row">' +
+          '<a href="' + esc(link) + '" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:none;font-size:.72rem">🔗 View source ↗</a>' +
+          '<span><button class="icon-btn" onclick="editPaper(\'' + p.id + '\')" title="Edit">✎</button>' +
+          '<button class="icon-btn del" onclick="deletePaper(\'' + p.id + '\')" title="Delete">🗑</button></span>' +
+        '</div>' +
         '</div></div>';
     }).join('');
   }
 
-  function allPapers() {
-    // conference-linked + published (locked) + user-added
-    return [
-      ...confLinkedPapers(),
-      ...publishedLinkedPapers(),
-      ...load('edu_research', []).map(p => ({ ...p, source: 'user' }))
-    ];
+  function allPapers() { return window.PAPERS ? PAPERS.all() : []; }
+
+  /* One change to a paper has to move every surface that shows it, so all
+     of them re-render together. */
+  function refreshPapers() {
+    renderResearch();
+    renderConfCards();
+    renderOverview();
   }
 
   function renderResearch() {
-    const list = allPapers();
-    const counts = {};
-    PAPER_STATUS.forEach(s => counts[s] = 0);
-    list.forEach(p => { if (counts[p.status] != null) counts[p.status]++; });
-    const indexedCount = PUBLISHED_PAPERS.filter(p => paperIndex(p.link || '').cls !== 'idx-rg').length;
+    if (!window.PAPERS) return;
+    const c = PAPERS.counts();
+    const indexedCount = PAPERS.published().filter(PAPERS.isIndexed).length;
     const tiles = [
-      { l: 'Total', v: list.length, c: 'stat-accent' },
-      { l: 'Published', v: PUBLISHED_PAPERS.length, c: 'stat-violet' },
+      { l: 'Total', v: c.total, c: 'stat-accent' },
+      { l: 'Published', v: c['Published'], c: 'stat-violet' },
       { l: 'Indexed (IEEE/Springer)', v: indexedCount, c: 'stat-green' },
-      { l: 'Writing', v: counts['Writing'], c: 'stat-muted' },
-      { l: 'Submitted', v: counts['Submitted'], c: 'stat-accent' },
-      { l: 'Under Review', v: counts['Under Review'], c: 'stat-amber' },
-      { l: 'Accepted', v: counts['Accepted'], c: 'stat-green' },
-      { l: 'Rejected', v: counts['Rejected'], c: 'stat-red' }
+      { l: 'Writing', v: c['Writing'], c: 'stat-muted' },
+      { l: 'Submitted', v: c['Submitted'], c: 'stat-accent' },
+      { l: 'Under Review', v: c['Under Review'], c: 'stat-amber' },
+      { l: 'Accepted', v: c['Accepted'], c: 'stat-green' },
+      { l: 'Rejected', v: c['Rejected'], c: 'stat-red' }
     ];
     document.getElementById('research-stats').innerHTML = tiles.map(t =>
       '<div class="stat-tile"><div class="stat-label">' + t.l + '</div>' +
@@ -1509,53 +1499,62 @@
 
     renderPublishedCards();
 
-    // list = conference-linked + user papers (published shown as cards above)
-    const listRows = list.filter(p => p.source !== 'rg');
-    const srcTag = { conf: '<span class="pill pill-blue">🔗 Conference</span>', rg: '<span class="pill pill-violet">🎓 ResearchGate</span>' };
+    const listRows = PAPERS.inProgress();
     const el = document.getElementById('research-list');
-    if (!listRows.length) { el.innerHTML = emptyState('🔬', 'No submitted papers yet.'); return; }
-    el.innerHTML = listRows.map(p => {
-      const locked = p.source !== 'user';
-      const actions = locked
-        ? (p.source === 'conf'
-            ? '<select class="paper-outcome" onchange="setPaperOutcome(this.dataset.t, this.value)" ' +
-              'data-t="' + esc(p.title) + '" title="Record the outcome">' +
-              ['Under Review', 'Accepted', 'Published', 'Rejected'].map(s =>
-                '<option value="' + s + '"' + (s === p.status ? ' selected' : '') + '>' + s + '</option>').join('') +
-              '</select>'
-            : '') +
-          (p.link ? '<a class="icon-btn" href="' + esc(p.link) + '" target="_blank" rel="noopener" title="Open">↗</a>' : '')
-        : '<button class="icon-btn" onclick="editPaper(\'' + p.id + '\')" title="Edit">✎</button>' +
-          '<button class="icon-btn del" onclick="delEntry(\'edu_research\',\'' + p.id + '\',renderResearch)" title="Delete">🗑</button>';
-      return '<div class="entry"><div class="entry-top"><div>' +
+    if (!listRows.length) { el.innerHTML = emptyState('🔬', 'No papers in progress. Use “+ Add Paper”.'); return; }
+    el.innerHTML = listRows.map(p =>
+      '<div class="entry"><div class="entry-top"><div>' +
         '<div class="entry-title">' + esc(p.title || 'Untitled') + '</div>' +
         '<div class="entry-meta">' +
-        (p.venue ? '<span>🎯 <b>' + esc(p.venue) + '</b></span>' : '') +
-        (p.date ? '<span>📅 <b>' + prettyDate(p.date) + '</b></span>' : '') +
-        (p.year ? '<span>📅 <b>' + esc(p.year) + '</b></span>' : '') +
-        (locked ? '<span>' + srcTag[p.source] + '</span>' : '') +
+          (p.venue ? '<span>🎯 <b>' + esc(p.venue) + '</b></span>' : '') +
+          (p.date ? '<span>📅 <b>' + prettyDate(p.date) + '</b></span>' : '') +
+          (p.year && !p.date ? '<span>📅 <b>' + esc(p.year) + '</b></span>' : '') +
         '</div></div><div class="entry-actions">' +
-        '<span class="pill ' + (paperPill[p.status] || 'pill-muted') + '">' + esc(p.status) + '</span>' +
-        actions +
-        '</div></div></div>';
-    }).join('');
+        '<select class="paper-outcome" data-pid="' + p.id + '" title="Change status">' +
+          PAPERS.STATUS.map(s => '<option value="' + s + '"' + (s === p.status ? ' selected' : '') + '>' + s + '</option>').join('') +
+        '</select>' +
+        (p.link ? '<a class="icon-btn" href="' + esc(p.link) + '" target="_blank" rel="noopener" title="Open">↗</a>' : '') +
+        '<button class="icon-btn" onclick="editPaper(\'' + p.id + '\')" title="Edit">✎</button>' +
+        '<button class="icon-btn del" onclick="deletePaper(\'' + p.id + '\')" title="Delete">🗑</button>' +
+      '</div></div></div>').join('');
+
+    el.querySelectorAll('select[data-pid]').forEach(sel => {
+      sel.addEventListener('change', () => {
+        PAPERS.setField(sel.dataset.pid, 'status', sel.value);
+        refreshPapers();
+      });
+    });
   }
+
   function paperFields(p) {
+    // Venue offers the tracked conferences first, but stays free text so a
+    // journal or a venue not on the deadline list can be typed in.
+    const venues = (typeof CONFS !== 'undefined' ? CONFS : []).map(c => c.name);
     return [
       { k: 'title', label: 'Paper Title', type: 'text', val: p.title, req: true, full: true },
-      { k: 'venue', label: 'Target Conference / Journal', type: 'text', val: p.venue, full: true },
-      { k: 'status', label: 'Status', type: 'select', opts: PAPER_STATUS, val: p.status || 'Writing' },
-      { k: 'date', label: 'Submission Date', type: 'date', val: p.date }
+      { k: 'venue', label: 'Conference / Journal', type: 'text', val: p.venue, full: true,
+        list: venues },
+      { k: 'status', label: 'Status', type: 'select', opts: PAPERS.STATUS, val: p.status || 'Writing' },
+      { k: 'date', label: 'Submission Date', type: 'date', val: p.date },
+      { k: 'year', label: 'Year', type: 'text', val: p.year },
+      { k: 'link', label: 'Paper Link (IEEE / Springer / ResearchGate…)', type: 'text', val: p.link, full: true },
+      { k: 'notes', label: 'Notes', type: 'textarea', val: p.notes, full: true }
     ];
   }
   function openPaperForm() {
     openForm({ title: 'Add Paper', sub: 'New manuscript', fields: paperFields({}),
-      onSave: f => { const l = load('edu_research', []); l.push({ id: uid(), ...f }); save('edu_research', l); renderResearch(); } });
+      onSave: f => { PAPERS.add(f); refreshPapers(); if (window.toast) toast('Paper added', 'ok'); } });
   }
   function editPaper(id) {
-    const l = load('edu_research', []); const p = l.find(x => x.id === id); if (!p) return;
+    const p = PAPERS.byId(id); if (!p) return;
     openForm({ title: 'Edit Paper', sub: esc(p.title || ''), fields: paperFields(p),
-      onSave: f => { Object.assign(p, f); save('edu_research', l); renderResearch(); } });
+      onSave: f => { PAPERS.update(id, f); refreshPapers(); if (window.toast) toast('Paper updated', 'ok'); } });
+  }
+  function deletePaper(id) {
+    const p = PAPERS.byId(id);
+    if (!confirm('Delete "' + ((p && p.title) || 'this paper') + '"?')) return;
+    PAPERS.remove(id);
+    refreshPapers();
   }
 
   // ======================= SHARED: entry modal =======================
@@ -1584,7 +1583,12 @@
       } else {
         const attrs = (f.step ? ' step="' + f.step + '"' : '') + (f.min != null ? ' min="' + f.min + '"' : '') +
           (f.max != null ? ' max="' + f.max + '"' : '') + (f.req ? ' required' : '');
-        ctrl = '<input type="' + f.type + '" name="' + f.k + '" value="' + esc(String(v)) + '"' + attrs + '>';
+        // `list` offers suggestions while still accepting free text
+        const listId = f.list && f.list.length ? 'dl-' + f.k : '';
+        ctrl = '<input type="' + f.type + '" name="' + f.k + '" value="' + esc(String(v)) + '"' + attrs +
+          (listId ? ' list="' + listId + '"' : '') + '>' +
+          (listId ? '<datalist id="' + listId + '">' +
+            f.list.map(o => '<option value="' + esc(String(o)) + '">').join('') + '</datalist>' : '');
       }
       return '<div class="' + cls + '"><label>' + f.label + '</label>' + ctrl + '</div>';
     }).join('');
@@ -1621,8 +1625,6 @@
   }
   function renderOverview() {
     const uni = load('edu_uni', []);
-    const research = load('edu_research', []);
-
     const papers = allPapers();
     const submittedSet = ['Submitted', 'Under Review'];
     const papersSubmitted = papers.filter(p => submittedSet.includes(p.status)).length;
@@ -1765,11 +1767,22 @@
       renderErasmusDocs();
       renderCountryDocsPending();
       renderDocs();
-      renderResearch();
       renderOverview();
       if (scholarshipView.mode !== 'cats') renderScholarshipsPanel();
       if (countryView.mode === 'detail') renderCountryPanel();
     });
+  }
+  // Papers feed the Research tab, the conference cards and the Overview
+  // tiles, so any change — local or arriving from another device — redraws
+  // all three together.
+  if (window.PAPERS) {
+    PAPERS.onChange(() => {
+      renderResearch();
+      renderConfCards();
+      renderOverview();
+    });
+    // Migrate the previously hardcoded lists into the store, once.
+    PAPERS.seed(paperSeed());
   }
   renderUni();
   renderErasmusDocs();

@@ -520,6 +520,14 @@ td.has-go .ot-cell { padding-right: 1.6rem; }
   background: var(--surface2); border-radius: 4px; padding: .08rem .3rem; color: var(--text);
 }
 
+/* status chip beside each paper on a conference card */
+.paper-item-status {
+  font-family: 'Space Mono', monospace; font-size: .5rem; letter-spacing: .05em;
+  text-transform: uppercase; padding: .1rem .4rem; border-radius: 20px;
+  margin-left: .45rem; white-space: nowrap; vertical-align: middle;
+}
+.pub-link-row .icon-btn { width: 26px; height: 26px; font-size: .72rem; }
+
 .paper-outcome {
   font-family: 'Space Mono', monospace; font-size: .6rem; letter-spacing: .04em;
   background: var(--surface2); border: 1px solid var(--glass-brd); border-radius: 7px;

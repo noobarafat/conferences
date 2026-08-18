@@ -24,6 +24,12 @@
         out.push({ name: DB.TAB, headers: DB.HEADERS, why: 'checkboxes, paper outcomes and entries', state: s });
       }
     }
+    if (window.PAPERS) {
+      var ps = PAPERS.state();
+      if (ps === 'no-tab' || ps === 'no-headers') {
+        out.push({ name: PAPERS.TAB, headers: PAPERS.HEADERS, why: 'every paper and its status', state: ps });
+      }
+    }
     if (window.OUTREACH && OUTREACH.HEADERS) {
       var os = OUTREACH.syncState();
       if (os === 'no-tab' || os === 'no-headers') {
@@ -100,6 +106,7 @@
       if (window.toast) toast('Checking the Sheet…');
       var jobs = [];
       if (window.DB) jobs.push(DB.retry());
+      if (window.PAPERS) jobs.push(PAPERS.retrySheet());
       if (window.OUTREACH) jobs.push(OUTREACH.retrySheet());
       Promise.all(jobs).then(function () {
         var left = tabsNeeded();
@@ -123,6 +130,7 @@
     }
     document.getElementById(HOST_ID).addEventListener('click', onClick);
     if (window.DB) DB.onChange(render);
+    if (window.PAPERS) PAPERS.onChange(render);
     if (window.OUTREACH) OUTREACH.onChange(render);
     render();
     // states resolve a moment after boot, once both stores have answered
