@@ -43,6 +43,11 @@ window.SyncCore = (function () {
     // so sending create twice for one id makes two rows. Anything in here
     // must be written with update, which matches on id and is idempotent.
     var known = {};
+    // Ids with a request in the air. flush() can run again (a sync finishing,
+    // the retry timer, a fresh edit) while an earlier write is still waiting
+    // on the backend, and every one of those runs would otherwise re-send the
+    // same create — which is exactly how one paper became three rows.
+    var inflight = {};
     var subs = [];
     var state = 'idle';   // idle | syncing | ok | offline | no-tab
     var timer = null;
@@ -143,40 +148,47 @@ window.SyncCore = (function () {
         // 'pending' = not sent yet; a number = re-armed after a sync still
         // saw the row. Anything else is already sent and awaiting proof.
         if (tombs[id] !== 'pending' && typeof tombs[id] !== 'number') return;
+        if (inflight['del:' + id]) return;
         var attempt = typeof tombs[id] === 'number' ? tombs[id] : 0;
+        inflight['del:' + id] = true;
         jobs.push(SHEET.remove(TAB, id).then(function () {
-          tombs[id] = true; persist();          // held until a sync confirms
+          tombs[id] = true;                     // held until a sync confirms
         }).catch(function (err) {
           if (isNoTab(err)) { state = 'no-tab'; notify(); return; }
           // Row already gone is a success for our purposes.
-          if (/id not found/i.test(String(err && err.message))) { delete tombs[id]; persist(); return; }
+          if (/id not found/i.test(String(err && err.message))) { delete tombs[id]; return; }
           tombs[id] = attempt;                  // keep for the next attempt
-        }));
+        }).then(function () { delete inflight['del:' + id]; persist(); }));
       });
 
       Object.keys(outbox).forEach(function (id) {
         var r = byId(id);
         if (!r) { delete outbox[id]; return; }
+        if (inflight[id]) return;                 // already being written
         // An id the Sheet already holds is always an update, whatever the
         // queue says — create would append a second copy.
         var verb = known[id] ? 'update' : outbox[id];
+        inflight[id] = true;
+        // Claim the id before the request resolves, so anything that decides
+        // a verb while this is in the air chooses update rather than create.
+        if (verb === 'create') known[id] = true;
         var call = verb === 'create' ? SHEET.create(TAB, row(r)) : SHEET.update(TAB, row(r));
         jobs.push(call.then(function () {
           known[id] = true;
-          delete outbox[id]; persist();
+          delete outbox[id];
         }).catch(function (err) {
           if (isNoTab(err)) { state = 'no-tab'; notify(); return; }
           // Only switch verb when the backend actually says the row is not
           // there. Falling back to create on a transient failure would append
           // a second copy of a row that already exists.
           if (verb === 'update' && /id not found/i.test(String(err && err.message))) {
-            delete known[id];
             return SHEET.create(TAB, row(r)).then(function () {
-              known[id] = true; delete outbox[id]; persist();
+              known[id] = true; delete outbox[id];
             }).catch(function () {});
           }
+          if (verb === 'create') delete known[id];   // create failed; not there
           // Anything else stays queued and is retried on the next flush.
-        }));
+        }).then(function () { delete inflight[id]; persist(); }));
       });
 
       if (!jobs.length) return Promise.resolve(true);

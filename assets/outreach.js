@@ -37,6 +37,14 @@ window.OUTREACH = (function () {
   // Rows the Sheet has not confirmed yet, and rows deleted locally awaiting
   // confirmation. Persisted, so a reload or a crash cannot lose the intent.
   var pendingUni = {}, pendingProf = {}, tombUni = {}, tombProf = {};
+  // Ids the Sheet is known to hold. The backend's create appends blindly, so
+  // re-sending a create for an existing id makes a second row. Anything here
+  // must be written with update, which matches on id and is idempotent.
+  var knownUni = {}, knownProf = {};
+  // Ids with a request in the air. flushPending() can run again while an
+  // earlier write is still waiting on the backend, and every such run would
+  // otherwise re-send the same create and append another row.
+  var inflight = {};
 
   /* ---------- helpers ---------- */
   function uuid() {
@@ -114,7 +122,9 @@ window.OUTREACH = (function () {
     try {
       localStorage.setItem(LS_UNI, JSON.stringify(unis.map(function (u) { return rowOf(u, UNI_FIELDS); })));
       localStorage.setItem(LS_PROF, JSON.stringify(profs.map(function (p) { return rowOf(p, PROF_FIELDS); })));
-      localStorage.setItem(LS_Q, JSON.stringify({ pu: pendingUni, pp: pendingProf, tu: tombUni, tp: tombProf }));
+      localStorage.setItem(LS_Q, JSON.stringify({
+        pu: pendingUni, pp: pendingProf, tu: tombUni, tp: tombProf, ku: knownUni, kp: knownProf
+      }));
     } catch (e) {}
   }
   function emit() { save(); subs.forEach(function (f) { try { f(); } catch (e) {} }); }
@@ -132,12 +142,13 @@ window.OUTREACH = (function () {
      not accepted yet — an edit made offline, or a create whose request
      failed. Replacing the arrays outright (the old behaviour) meant an empty
      or lagging tab could erase everything held locally. */
-  function mergeInto(local, remote, normFn, pendingSet, tombSet) {
+  function mergeInto(local, remote, normFn, pendingSet, tombSet, knownSet) {
     var seen = {}, next = [];
     remote.forEach(function (r) {
       if (!r || !r.id) return;
       var id = String(r.id);
       seen[id] = true;
+      knownSet[id] = true;
       // Still listed remotely means the delete never took — re-arm it, but
       // only a few times. Giving up leaves a spare row on the Sheet, which
       // is far safer than a stuck tombstone deleting a real row forever.
@@ -154,7 +165,9 @@ window.OUTREACH = (function () {
     local.forEach(function (l) {
       if (seen[l.id] || tombSet[l.id]) return;
       next.push(l);
-      if (!pendingSet[l.id]) pendingSet[l.id] = 'create';         // re-queue: never landed
+      // Re-queue as update whenever the id was ever written; a create still
+      // in flight would otherwise be sent twice and append a duplicate.
+      if (!pendingSet[l.id]) pendingSet[l.id] = knownSet[l.id] ? 'update' : 'create';
     });
     Object.keys(tombSet).forEach(function (id) { if (!seen[id]) delete tombSet[id]; });
     return next;
@@ -164,8 +177,8 @@ window.OUTREACH = (function () {
     if (!(window.SHEET && SHEET.configured())) { syncState = 'offline'; return Promise.resolve(false); }
     syncState = 'syncing';
     return Promise.all([SHEET.get(UNI_TAB), SHEET.get(PROF_TAB)]).then(function (res) {
-      unis = mergeInto(unis, res[0] || [], normUni, pendingUni, tombUni);
-      profs = mergeInto(profs, res[1] || [], normProf, pendingProf, tombProf);
+      unis = mergeInto(unis, res[0] || [], normUni, pendingUni, tombUni, knownUni);
+      profs = mergeInto(profs, res[1] || [], normProf, pendingProf, tombProf, knownProf);
       syncState = 'ok';
       emit();
       flushPending();
@@ -181,35 +194,49 @@ window.OUTREACH = (function () {
   function flushPending() {
     if (!sheetOn()) return Promise.resolve(false);
     var jobs = [];
-    function drain(pendingSet, tombSet, tab, list, fields) {
+    function drain(pendingSet, tombSet, tab, list, fields, knownSet) {
       Object.keys(tombSet).forEach(function (id) {
         if (tombSet[id] !== 'pending' && typeof tombSet[id] !== 'number') return;
+        var dkey = 'del:' + tab + ':' + id;
+        if (inflight[dkey]) return;
         var attempt = typeof tombSet[id] === 'number' ? tombSet[id] : 0;
-        jobs.push(SHEET.remove(tab, id).then(function () { tombSet[id] = true; save(); })
+        inflight[dkey] = true;
+        jobs.push(SHEET.remove(tab, id).then(function () { tombSet[id] = true; })
           .catch(function (err) {
             if (flagNoTab(err)) return;
-            if (/id not found/i.test(String(err && err.message))) { delete tombSet[id]; save(); return; }
+            if (/id not found/i.test(String(err && err.message))) { delete tombSet[id]; return; }
             tombSet[id] = attempt;
-          }));
+          }).then(function () { delete inflight[dkey]; save(); }));
       });
       Object.keys(pendingSet).forEach(function (id) {
         var rec = list.find(function (x) { return x.id === id; });
         if (!rec) { delete pendingSet[id]; return; }
-        var verb = pendingSet[id];
+        var key = tab + ':' + id;
+        if (inflight[key]) return;                 // already being written
+        // An id the Sheet already holds is always an update, whatever the
+        // queue says — create would append a second copy.
+        var verb = knownSet[id] ? 'update' : pendingSet[id];
+        inflight[key] = true;
+        // Claim the id before the request resolves, so anything deciding a
+        // verb while this is in the air picks update rather than create.
+        if (verb === 'create') knownSet[id] = true;
         var call = verb === 'create' ? SHEET.create(tab, rowOf(rec, fields)) : SHEET.update(tab, rowOf(rec, fields));
-        jobs.push(call.then(function () { delete pendingSet[id]; save(); }).catch(function (err) {
+        jobs.push(call.then(function () {
+          knownSet[id] = true; delete pendingSet[id];
+        }).catch(function (err) {
           if (flagNoTab(err)) return;
           // Switch verb only when the row genuinely is not there; creating
           // after a transient update failure would append a duplicate.
           if (verb === 'update' && /id not found/i.test(String(err && err.message))) {
             return SHEET.create(tab, rowOf(rec, fields))
-              .then(function () { delete pendingSet[id]; save(); }).catch(function () {});
+              .then(function () { knownSet[id] = true; delete pendingSet[id]; }).catch(function () {});
           }
-        }));
+          if (verb === 'create') delete knownSet[id];
+        }).then(function () { delete inflight[key]; save(); }));
       });
     }
-    drain(pendingUni, tombUni, UNI_TAB, unis, UNI_FIELDS);
-    drain(pendingProf, tombProf, PROF_TAB, profs, PROF_FIELDS);
+    drain(pendingUni, tombUni, UNI_TAB, unis, UNI_FIELDS, knownUni);
+    drain(pendingProf, tombProf, PROF_TAB, profs, PROF_FIELDS, knownProf);
     if (!jobs.length) return Promise.resolve(true);
     return Promise.all(jobs).then(function () { save(); return true; });
   }
@@ -304,8 +331,8 @@ window.OUTREACH = (function () {
     var kids = profsFor(id);
     unis = unis.filter(function (u) { return u.id !== id; });
     profs = profs.filter(function (p) { return p.uniId !== id; });
-    delete pendingUni[id]; tombUni[id] = 'pending';
-    kids.forEach(function (p) { delete pendingProf[p.id]; tombProf[p.id] = 'pending'; });
+    delete pendingUni[id]; delete knownUni[id]; tombUni[id] = 'pending';
+    kids.forEach(function (p) { delete pendingProf[p.id]; delete knownProf[p.id]; tombProf[p.id] = 'pending'; });
     emit(); flushPending();
   }
 
@@ -336,7 +363,7 @@ window.OUTREACH = (function () {
   }
   function removeProf(id) {
     profs = profs.filter(function (p) { return p.id !== id; });
-    delete pendingProf[id]; tombProf[id] = 'pending';
+    delete pendingProf[id]; delete knownProf[id]; tombProf[id] = 'pending';
     emit(); flushPending();
   }
 
@@ -454,6 +481,7 @@ window.OUTREACH = (function () {
     var q = JSON.parse(localStorage.getItem(LS_Q) || '{}') || {};
     pendingUni = q.pu || {}; pendingProf = q.pp || {};
     tombUni = q.tu || {}; tombProf = q.tp || {};
+    knownUni = q.ku || {}; knownProf = q.kp || {};
   } catch (e) {}
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { sync(); });
   else sync();
