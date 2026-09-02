@@ -86,7 +86,11 @@ window.PAPERS = (function () {
      on the Sheet, seeding before that answer would duplicate all of them. */
   function seed(seedRows) {
     if (!seedRows || !seedRows.length) return Promise.resolve(false);
-    return core.whenSettled().then(function () {
+    return core.whenSettled().then(function (ok) {
+      // Only seed once the Sheet has actually answered. Seeding after a
+      // failed sync would treat "we could not read it" as "there is nothing
+      // there" and plant a second copy of every paper.
+      if (!ok || core.state() !== 'ok') return false;
       if (core.rows().length) return dedupe();                    // real data exists
       if (window.DB && DB.load('papers_seeded', false)) return false;
       core.replaceAll(seedRows.map(function (r) {

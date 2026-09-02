@@ -34,10 +34,15 @@ window.SyncCore = (function () {
     var CK = 'sc_rows_' + cfg.key;      // cached rows
     var OK_ = 'sc_out_' + cfg.key;      // outbox
     var TK = 'sc_tomb_' + cfg.key;      // tombstones
+    var NK = 'sc_known_' + cfg.key;     // ids the Sheet already holds
 
     var rows = [];
     var outbox = {};      // id -> 'create' | 'update'
     var tombs = {};       // id -> true (deleted locally, not yet confirmed)
+    // Ids the Sheet is known to hold. The backend's create blindly appends,
+    // so sending create twice for one id makes two rows. Anything in here
+    // must be written with update, which matches on id and is idempotent.
+    var known = {};
     var subs = [];
     var state = 'idle';   // idle | syncing | ok | offline | no-tab
     var timer = null;
@@ -53,6 +58,7 @@ window.SyncCore = (function () {
         localStorage.setItem(CK, JSON.stringify(rows.map(row)));
         localStorage.setItem(OK_, JSON.stringify(outbox));
         localStorage.setItem(TK, JSON.stringify(tombs));
+        localStorage.setItem(NK, JSON.stringify(known));
       } catch (e) {}
     }
     function row(o) { var r = {}; FIELDS.forEach(function (k) { r[k] = o[k] == null ? '' : o[k]; }); return r; }
@@ -90,6 +96,7 @@ window.SyncCore = (function () {
         if (!r || !r.id) return;
         var id = String(r.id);
         seen[id] = true;
+        known[id] = true;
         // A row we deleted is still listed, so the delete did not take.
         // Re-arm it — but only a few times. Giving up leaves an extra row
         // on the Sheet, which is strictly safer than a stuck tombstone
@@ -106,12 +113,14 @@ window.SyncCore = (function () {
         next.push(norm(r));
       });
 
-      // Local rows the Sheet has never seen: keep them and make sure they
-      // are queued, so a failed or in-flight create is not silently lost.
+      // Local rows the Sheet has not listed: keep them and make sure they are
+      // queued. Re-queue as update whenever the id was ever written, because
+      // a create that is merely still in flight would otherwise be sent a
+      // second time and append a duplicate row.
       rows.forEach(function (l) {
         if (seen[l.id] || tombs[l.id]) return;
         next.push(l);
-        if (!outbox[l.id]) outbox[l.id] = 'create';
+        if (!outbox[l.id]) outbox[l.id] = known[l.id] ? 'update' : 'create';
       });
 
       // Tombstones for rows the remote no longer lists have done their job.
@@ -148,9 +157,12 @@ window.SyncCore = (function () {
       Object.keys(outbox).forEach(function (id) {
         var r = byId(id);
         if (!r) { delete outbox[id]; return; }
-        var verb = outbox[id];
+        // An id the Sheet already holds is always an update, whatever the
+        // queue says — create would append a second copy.
+        var verb = known[id] ? 'update' : outbox[id];
         var call = verb === 'create' ? SHEET.create(TAB, row(r)) : SHEET.update(TAB, row(r));
         jobs.push(call.then(function () {
+          known[id] = true;
           delete outbox[id]; persist();
         }).catch(function (err) {
           if (isNoTab(err)) { state = 'no-tab'; notify(); return; }
@@ -158,7 +170,10 @@ window.SyncCore = (function () {
           // there. Falling back to create on a transient failure would append
           // a second copy of a row that already exists.
           if (verb === 'update' && /id not found/i.test(String(err && err.message))) {
-            return SHEET.create(TAB, row(r)).then(function () { delete outbox[id]; persist(); }).catch(function () {});
+            delete known[id];
+            return SHEET.create(TAB, row(r)).then(function () {
+              known[id] = true; delete outbox[id]; persist();
+            }).catch(function () {});
           }
           // Anything else stays queued and is retried on the next flush.
         }));
@@ -194,6 +209,7 @@ window.SyncCore = (function () {
       var had = byId(id);
       rows = rows.filter(function (r) { return String(r.id) !== String(id); });
       delete outbox[id];
+      delete known[id];
       if (had) tombs[id] = 'pending';
       emit();
       schedule();
@@ -201,7 +217,7 @@ window.SyncCore = (function () {
     /* Replace the whole set (used by the one-time seed). */
     function replaceAll(list) {
       rows = list.map(norm);
-      rows.forEach(function (r) { outbox[r.id] = 'create'; });
+      rows.forEach(function (r) { outbox[r.id] = known[r.id] ? 'update' : 'create'; });
       emit();
       schedule();
       return rows.slice();
@@ -216,6 +232,7 @@ window.SyncCore = (function () {
     rows = readJSON(CK, []).map(norm);
     outbox = readJSON(OK_, {});
     tombs = readJSON(TK, {});
+    known = readJSON(NK, {});
 
     function start() { settled = sync(); }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
